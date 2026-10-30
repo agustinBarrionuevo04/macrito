@@ -13,8 +13,11 @@ export type RouteGuardResult =
 /** Páginas solo para quien no tiene sesión. */
 const GUEST_ONLY = ['/login', '/register', '/forgot-password'];
 
-/** Rutas accesibles con o sin sesión (el link de recuperación crea una sesión temporal). */
-const OPEN = ['/auth', '/reset-password'];
+/**
+ * Rutas accesibles con o sin sesión: el link de recuperación crea una sesión temporal y la página
+ * offline la sirve el service worker sin saber si hay sesión.
+ */
+const OPEN = ['/auth', '/reset-password', '/offline'];
 
 function matches(pathname: string, base: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`);

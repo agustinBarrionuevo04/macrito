@@ -14,14 +14,16 @@ describe('resolveRoute sin sesión', () => {
     },
   );
 
-  it.each(['/login', '/register', '/forgot-password', '/reset-password', '/auth/callback'])(
-    '%s es accesible',
-    (pathname) => {
-      expect(resolveRoute({ pathname, hasSession: false, onboardingCompleted: null })).toEqual(
-        next,
-      );
-    },
-  );
+  it.each([
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/auth/callback',
+    '/offline',
+  ])('%s es accesible', (pathname) => {
+    expect(resolveRoute({ pathname, hasSession: false, onboardingCompleted: null })).toEqual(next);
+  });
 
   it('responde 401 en /api en vez de redirigir', () => {
     expect(
