@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
+import { AiAnalyzer } from '@/features/ai-photo/components/ai-analyzer';
 import { addEntry } from '@/features/diary/actions';
 import { defaultMealFor } from '@/features/diary/meal';
 import { es } from '@/lib/i18n/es';
@@ -24,7 +25,7 @@ import { PortionSheet } from './portion-sheet';
 
 const a = es.addFood;
 
-type Tab = 'search' | 'scan' | 'custom';
+type Tab = 'search' | 'scan' | 'photo' | 'text' | 'custom';
 
 type Props = {
   /** Día al que se agrega (`AAAA-MM-DD`) y si es hoy (para volver al diario). */
@@ -48,6 +49,8 @@ type ScanState =
 const TABS: { id: Tab; label: string }[] = [
   { id: 'search', label: a.tabs.search },
   { id: 'scan', label: a.tabs.scan },
+  { id: 'photo', label: es.aiFood.tabs.photo },
+  { id: 'text', label: es.aiFood.tabs.text },
   { id: 'custom', label: a.tabs.custom },
 ];
 
@@ -117,6 +120,19 @@ export function AddFoodView({ day, today, initialMeal, favoriteIds, favorites, r
     [choose],
   );
 
+  const viewDiary = () => router.push(day === today ? '/' : `/?date=${day}`);
+
+  const renderPicker = (onSelect: (food: Food) => void) => (
+    <FoodPicker
+      onSelect={onSelect}
+      favoriteIds={favIds}
+      onToggleFavorite={toggleFavorite}
+      favorites={favFoods}
+      recents={recents.filter((food) => !favIds.has(food.id))}
+      onCreate={(name) => setForm({ kind: 'create', values: emptyValues({ name }) })}
+    />
+  );
+
   async function confirm(draft: EntryDraft) {
     const result = await addEntry(draft, day);
     if (result.ok) {
@@ -125,7 +141,7 @@ export function AddFoodView({ day, today, initialMeal, favoriteIds, favorites, r
         tone: 'success',
         action: {
           label: a.portion.view,
-          onClick: () => router.push(day === today ? '/' : `/?date=${day}`),
+          onClick: viewDiary,
         },
       });
     }
@@ -137,7 +153,7 @@ export function AddFoodView({ day, today, initialMeal, favoriteIds, favorites, r
       <div
         role="tablist"
         aria-label={a.title}
-        className="bg-surface-muted grid grid-cols-3 gap-1 rounded-xl p-1"
+        className="bg-surface-muted grid grid-cols-5 gap-1 rounded-xl p-1"
       >
         {TABS.map(({ id, label }) => (
           <button
@@ -149,7 +165,7 @@ export function AddFoodView({ day, today, initialMeal, favoriteIds, favorites, r
             aria-controls={`panel-${id}`}
             onClick={() => setTab(id)}
             className={cx(
-              'min-h-11 rounded-lg text-sm font-medium',
+              'min-h-11 rounded-lg px-1 text-xs font-medium',
               tab === id ? 'bg-surface text-foreground shadow-sm' : 'text-muted',
             )}
           >
@@ -199,6 +215,17 @@ export function AddFoodView({ day, today, initialMeal, favoriteIds, favorites, r
               </div>
             ) : null}
           </div>
+        ) : null}
+
+        {tab === 'photo' || tab === 'text' ? (
+          <AiAnalyzer
+            key={tab}
+            mode={tab}
+            initialMeal={initialMeal}
+            renderPicker={renderPicker}
+            onAdd={(draft) => addEntry(draft, day)}
+            onViewDiary={viewDiary}
+          />
         ) : null}
 
         {tab === 'custom' ? (
