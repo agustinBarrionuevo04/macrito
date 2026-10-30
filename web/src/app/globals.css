@@ -1,20 +1,93 @@
 @import 'tailwindcss';
 
+/*
+ * Tokens de diseño. Los componentes usan solo estas variables (bg-surface, text-muted, …), así que
+ * el tema claro/oscuro se resuelve acá y no hace falta `dark:` en cada clase.
+ * Oscuro: automático según el sistema, o forzado con data-theme="dark" | "light" en <html>.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #fafaf9;
+  --foreground: #1c1917;
+  --surface: #ffffff;
+  --surface-muted: #f5f5f4;
+  --border: #e7e5e4;
+  --muted: #6b6560;
+  --primary: #047857;
+  --primary-foreground: #ffffff;
+  --primary-soft: #d1fae5;
+  --danger: #b91c1c;
+  --warning: #b45309;
+  --protein: #1d4ed8;
+  --carbs: #b45309;
+  --fat: #be185d;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #0c0a09;
+  --foreground: #fafaf9;
+  --surface: #1c1917;
+  --surface-muted: #292524;
+  --border: #44403c;
+  --muted: #a8a29e;
+  --primary: #34d399;
+  --primary-foreground: #052e16;
+  --primary-soft: #064e3b;
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --protein: #60a5fa;
+  --carbs: #fbbf24;
+  --fat: #f472b6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --background: #0c0a09;
+    --foreground: #fafaf9;
+    --surface: #1c1917;
+    --surface-muted: #292524;
+    --border: #44403c;
+    --muted: #a8a29e;
+    --primary: #34d399;
+    --primary-foreground: #052e16;
+    --primary-soft: #064e3b;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --protein: #60a5fa;
+    --carbs: #fbbf24;
+    --fat: #f472b6;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-protein: var(--protein);
+  --color-carbs: var(--carbs);
+  --color-fat: var(--fat);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Márgenes de seguridad de iPhone (notch y barra inferior) en modo standalone. */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+html {
+  background: var(--background);
 }
 
 body {
@@ -26,4 +99,20 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

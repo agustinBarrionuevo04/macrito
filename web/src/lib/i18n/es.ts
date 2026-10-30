@@ -54,4 +54,42 @@ export const es = {
       generic: 'No pudimos completar la operación. Probá de nuevo.',
     },
   },
+  ui: {
+    close: 'Cerrar',
+    loading: 'Cargando…',
+    retry: 'Reintentar',
+    notifications: 'Notificaciones',
+    nav: {
+      label: 'Navegación principal',
+      today: 'Hoy',
+      add: 'Agregar',
+      progress: 'Progreso',
+      profile: 'Perfil',
+    },
+    theme: {
+      label: 'Tema',
+      light: 'Claro',
+      dark: 'Oscuro',
+      system: 'Automático',
+    },
+    install: {
+      title: 'Instalá Macritos',
+      description: 'Abrila desde la pantalla de inicio, como cualquier app.',
+      action: 'Instalar',
+      dismiss: 'Ahora no',
+      iosTitle: 'Instalá Macritos en tu iPhone',
+      iosSteps: [
+        'Tocá el botón Compartir de Safari.',
+        'Elegí "Añadir a pantalla de inicio".',
+        'Tocá "Añadir".',
+      ],
+      iosOpenSafariTitle: 'Para instalarla, abrila en Safari',
+      iosOpenSafari:
+        'En iPhone solo Safari puede añadir la app a la pantalla de inicio. Copiá este link y abrilo ahí.',
+    },
+    offline: {
+      title: 'Sin conexión',
+      description: 'No se pudo cargar esta pantalla. Revisá tu conexión y volvé a intentar.',
+    },
+  },
 } as const;
