@@ -19,6 +19,8 @@ export type AiServiceDeps = {
   provider: AiProvider;
   usage: UsageTracker;
   limits: { photo: number; text: number };
+  /** Registro de la respuesta cruda del modelo (solo con `AI_DEBUG=1`). */
+  debug?: (message: string) => void;
 };
 
 /**
@@ -26,7 +28,7 @@ export type AiServiceDeps = {
  * El cupo solo se consume si el pedido llegó a procesarse: si el proveedor falló antes de
  * devolver algo, se libera (no se le cobra al usuario un error nuestro).
  */
-export function createAiService({ provider, usage, limits }: AiServiceDeps) {
+export function createAiService({ provider, usage, limits, debug }: AiServiceDeps) {
   async function run(
     userId: string,
     day: string,
@@ -48,7 +50,17 @@ export function createAiService({ provider, usage, limits }: AiServiceDeps) {
     const used: AiUsage = analysis.usage;
     // Los tokens se registran aunque la respuesta no sirva: se gastaron igual.
     await usage.recordTokens(userId, day, kind, used);
-    return parseModelItems(analysis.raw);
+    try {
+      return parseModelItems(analysis.raw);
+    } catch (error) {
+      if (error instanceof AiError && analysis.diagnostics) {
+        debug?.(`respuesta cruda del modelo: ${JSON.stringify(analysis.raw).slice(0, 800)}`);
+        throw new AiError(error.code, `${error.message}. ${analysis.diagnostics}`, {
+          cause: error,
+        });
+      }
+      throw error;
+    }
   }
 
   return {

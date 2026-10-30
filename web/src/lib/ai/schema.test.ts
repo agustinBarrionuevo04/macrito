@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_ITEM_GRAMS, MAX_ITEMS, parseModelItems } from './schema';
+import { coerceItemsRoot, MAX_ITEM_GRAMS, MAX_ITEMS, parseModelItems } from './schema';
 import { AiError } from './types';
 
 const ok = { query: 'milanesa', confidence: 'high' };
@@ -159,18 +159,17 @@ describe('parseModelItems: respuestas malformadas', () => {
       undefined,
       'hola',
       42,
-      [],
       {},
       { items: 'x' },
       { items: {} },
-      { item: [ok] },
+      { a: 1, b: 'x' },
     ]) {
       expect(bad(raw), JSON.stringify(raw)).toBe('bad_response');
     }
   });
 
   it('si había ítems y no sobrevivió ninguno, es un error (no "no hay comida")', () => {
-    expect(bad({ items: [{ name: 'huevo' }] })).toBe('bad_response');
+    expect(bad({ items: [{ producto_raro: 'huevo' }] })).toBe('bad_response');
     expect(
       bad({ items: [null, 3, 'x', [], { query: 5 }, { query: '   ' }, { query: 'x'.repeat(81) }] }),
     ).toBe('bad_response');
@@ -178,5 +177,62 @@ describe('parseModelItems: respuestas malformadas', () => {
 
   it('descarta los ítems rotos pero conserva los buenos', () => {
     expect(parseModelItems({ items: [null, { query: 7 }, ok, 'x'] })).toHaveLength(1);
+  });
+});
+
+describe('parseModelItems: respuestas con otra forma (se recuperan)', () => {
+  const query = (raw: unknown) => parseModelItems(raw).map((item) => item.query);
+
+  it('la lista como texto JSON, con o sin cercas', () => {
+    expect(query({ items: '[{"query":"pan","confidence":"high"}]' })).toEqual(['pan']);
+    expect(query('```json\n{"items":[{"query":"leche"}]}\n```')).toEqual(['leche']);
+    expect(query('Acá está: {"items":[{"query":"arroz"}]} listo')).toEqual(['arroz']);
+  });
+
+  it('una lista suelta, sin el objeto que la envuelve', () => {
+    expect(query([ok])).toEqual(['milanesa']);
+    expect(parseModelItems([])).toEqual([]);
+  });
+
+  it('la lista con otro nombre', () => {
+    expect(query({ foods: [ok] })).toEqual(['milanesa']);
+    expect(query({ alimentos: [{ nombre: 'flan' }] })).toEqual(['flan']);
+    expect(query({ resultado: [ok] })).toEqual(['milanesa']); // única lista del objeto
+  });
+
+  it('la lista anidada un nivel', () => {
+    expect(query({ result: { items: [ok] } })).toEqual(['milanesa']);
+    expect(query({ data: { foods: '[{"query":"pan"}]' } })).toEqual(['pan']);
+  });
+
+  it('nombres alternativos de los campos de cada ítem', () => {
+    const [item] = parseModelItems({ items: [{ nombre: 'Flan', gramos: 120, confidence: 'med' }] });
+    expect(item).toEqual({ query: 'Flan', est_grams: 120, confidence: 'med' });
+    expect(parseModelItems({ items: [{ food: 'pan', grams: '80' }] })[0]).toMatchObject({
+      query: 'pan',
+      est_grams: 80,
+    });
+  });
+
+  it('lo recuperado se valida igual que lo demás (gramos absurdos, campos inventados)', () => {
+    const [item] = parseModelItems({ foods: [{ name: 'aceite', grams: 9_000_000, kcal: 99999 }] });
+    expect(item).toEqual({ query: 'aceite', est_grams: null, confidence: 'low' });
+  });
+
+  it('con dos listas ambiguas no adivina', () => {
+    expect(bad({ a: [ok], b: [ok] })).toBe('bad_response');
+  });
+});
+
+describe('coerceItemsRoot', () => {
+  it('no toca lo que ya viene bien', () => {
+    const root = { items: [ok] };
+    expect(coerceItemsRoot(root)).toBe(root);
+  });
+
+  it('deja pasar lo que no puede recuperar', () => {
+    expect(coerceItemsRoot('hola')).toBe('hola');
+    expect(coerceItemsRoot(7)).toBe(7);
+    expect(coerceItemsRoot(null)).toBeNull();
   });
 });

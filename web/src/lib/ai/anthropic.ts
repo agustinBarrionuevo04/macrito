@@ -1,10 +1,12 @@
+import { describeShape, extractJsonValue } from './extract';
 import { TOOL_DESCRIPTION, TOOL_NAME, TOOL_SCHEMA } from './schema';
 import { AiError, type AiAnalysis, type AiContent, type AiProvider } from './types';
 
 const API_VERSION = '2023-06-01';
 const DEFAULT_BASE_URL = 'https://api.anthropic.com';
 const DEFAULT_TIMEOUT_MS = 25_000;
-const MAX_TOKENS = 1024;
+// Con varios ítems y sus valores por 100 g, 1024 se queda corto y la respuesta llega cortada.
+const MAX_TOKENS = 2048;
 
 export type AnthropicOptions = {
   apiKey: string;
@@ -39,16 +41,32 @@ function requestBody(model: string, content: AiContent, system: string) {
   };
 }
 
-function errorForStatus(status: number, content: AiContent): AiError {
-  if (status === 401 || status === 403) return new AiError('unauthorized', `HTTP ${status}`);
-  if (status === 429) return new AiError('rate_limited', 'HTTP 429');
-  if (status === 413) return new AiError('image_rejected', 'HTTP 413');
+/** Mensaje de error que devuelve la API (`{ error: { type, message } }`). No incluye datos del usuario ni la clave. */
+async function apiErrorDetail(response: Response): Promise<string> {
+  try {
+    const body: unknown = await response.json();
+    const error = (body as { error?: { type?: unknown; message?: unknown } } | null)?.error;
+    const type = typeof error?.type === 'string' ? error.type : '';
+    const message = typeof error?.message === 'string' ? error.message : '';
+    return [type, message].filter(Boolean).join(': ').slice(0, 300);
+  } catch {
+    return '';
+  }
+}
+
+async function errorForStatus(response: Response, content: AiContent): Promise<AiError> {
+  const status = response.status;
+  const detail = await apiErrorDetail(response);
+  const message = detail ? `HTTP ${status} (${detail})` : `HTTP ${status}`;
+  if (status === 401 || status === 403) return new AiError('unauthorized', message);
+  if (status === 429) return new AiError('rate_limited', message);
+  if (status === 413) return new AiError('image_rejected', message);
   if (status === 400) {
     return content.kind === 'photo'
-      ? new AiError('image_rejected', 'HTTP 400')
-      : new AiError('bad_response', 'HTTP 400');
+      ? new AiError('image_rejected', message)
+      : new AiError('bad_response', message);
   }
-  return new AiError('unavailable', `HTTP ${status}`);
+  return new AiError('unavailable', message);
 }
 
 /** Proveedor Anthropic (Messages API) con salida forzada por herramienta. */
@@ -78,7 +96,7 @@ export function createAnthropicProvider(options: AnthropicOptions): AiProvider {
         throw new AiError('unavailable', 'no se pudo conectar con el proveedor', { cause: error });
       }
 
-      if (!response.ok) throw errorForStatus(response.status, content);
+      if (!response.ok) throw await errorForStatus(response, content);
 
       let body: unknown;
       try {
@@ -91,23 +109,52 @@ export function createAnthropicProvider(options: AnthropicOptions): AiProvider {
   };
 }
 
+type Block = { type?: string; name?: string; input?: unknown; text?: unknown };
+
+/**
+ * Saca de la respuesta lo que devolvió el modelo. Lo normal es la llamada a la herramienta; si el
+ * modelo contestó con texto (o con otra herramienta) se busca el JSON ahí, para no tirar una
+ * respuesta que ya se pagó. La forma de lo recibido se guarda en `diagnostics` (sin su contenido).
+ */
 function readResponse(body: unknown): AiAnalysis {
-  const record = body as {
-    content?: { type?: string; name?: string; input?: unknown }[];
+  const record = (body ?? {}) as {
+    content?: Block[];
+    stop_reason?: unknown;
     usage?: { input_tokens?: unknown; output_tokens?: unknown };
   };
-  const call = Array.isArray(record?.content)
-    ? record.content.find((block) => block?.type === 'tool_use' && block.name === TOOL_NAME)
-    : undefined;
-  if (!call) throw new AiError('bad_response', 'la respuesta no llamó a la herramienta');
+  const blocks = Array.isArray(record.content) ? record.content : [];
+  const stopReason = typeof record.stop_reason === 'string' ? record.stop_reason : 'desconocido';
+
+  const call =
+    blocks.find((block) => block?.type === 'tool_use' && block.name === TOOL_NAME) ??
+    blocks.find((block) => block?.type === 'tool_use');
+  const text = blocks
+    .filter((block) => block?.type === 'text' && typeof block.text === 'string')
+    .map((block) => block.text as string)
+    .join('\n');
+
+  let raw: unknown;
+  let source: string;
+  if (call) {
+    raw = call.input;
+    source = call.name === TOOL_NAME ? 'herramienta' : `herramienta ${String(call.name)}`;
+  } else {
+    raw = extractJsonValue(text);
+    source = raw === undefined ? 'nada' : 'texto';
+  }
+
+  const diagnostics = `stop_reason=${stopReason}; bloques=[${blocks.map((b) => b?.type ?? '?').join(', ')}]; origen=${source}; forma=${describeShape(raw)}`;
+  if (raw === undefined)
+    throw new AiError('bad_response', `la respuesta no trae datos. ${diagnostics}`);
 
   const tokens = (value: unknown) =>
     typeof value === 'number' && value > 0 ? Math.round(value) : 0;
   return {
-    raw: call.input,
+    raw,
     usage: {
       inputTokens: tokens(record.usage?.input_tokens),
       outputTokens: tokens(record.usage?.output_tokens),
     },
+    diagnostics,
   };
 }

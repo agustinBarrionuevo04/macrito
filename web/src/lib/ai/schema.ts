@@ -1,5 +1,6 @@
 import type { Confidence, PhotoItem } from '@/types';
 import { isPlausible, toNumber } from '@/lib/foods/nutrition-check';
+import { extractJsonValue } from './extract';
 import { AiError } from './types';
 import { AI_UNITS, isAiUnit, toGrams } from './units';
 
@@ -57,10 +58,12 @@ export const TOOL_SCHEMA = {
           },
         },
         required: ['query', 'confidence'],
+        additionalProperties: false,
       },
     },
   },
   required: ['items'],
+  additionalProperties: false,
 } as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -94,18 +97,29 @@ function parseGuess(value: unknown): PhotoItem['per100g_guess'] {
     : undefined;
 }
 
+/** Nombres con los que un modelo suele decir "gramos" o "nombre del alimento" cuando ignora el esquema. */
+const QUERY_KEYS = ['query', 'name', 'nombre', 'food', 'alimento', 'item'] as const;
+const GRAMS_KEYS = ['est_grams', 'grams', 'gramos', 'estimated_grams', 'weight_g'] as const;
+/** Nombres con los que un modelo suele llamar a la lista de ítems. */
+const ITEMS_KEYS = ['items', 'foods', 'food_items', 'alimentos', 'comidas', 'results'] as const;
+
+const firstOf = (raw: Record<string, unknown>, keys: readonly string[]): unknown =>
+  keys.map((key) => raw[key]).find((value) => value !== undefined && value !== null);
+
 function parseGrams(raw: Record<string, unknown>): number | null {
   const amount = positive(raw.amount);
   const grams =
     amount !== undefined && isAiUnit(raw.unit)
       ? toGrams(amount, raw.unit)
-      : positive(raw.est_grams);
+      : positive(firstOf(raw, GRAMS_KEYS));
   return grams !== undefined && grams <= MAX_ITEM_GRAMS ? Math.round(grams * 100) / 100 : null;
 }
 
 function parseItem(raw: unknown): PhotoItem | null {
-  if (!isRecord(raw) || typeof raw.query !== 'string') return null;
-  const query = raw.query.trim().replace(/\s+/g, ' ');
+  if (!isRecord(raw)) return null;
+  const rawQuery = firstOf(raw, QUERY_KEYS);
+  if (typeof rawQuery !== 'string') return null;
+  const query = rawQuery.trim().replace(/\s+/g, ' ');
   if (query.length === 0 || query.length > MAX_QUERY_LENGTH) return null;
 
   const item: PhotoItem = {
@@ -125,17 +139,53 @@ function parseItem(raw: unknown): PhotoItem | null {
 }
 
 /**
+ * Lleva la respuesta a `{ items: [...] }` cuando el modelo la devolvió de otra forma pero la
+ * información está: como texto JSON (con o sin cercas), como una lista suelta, con otro nombre para
+ * la lista, o anidada un nivel. Si no se puede, devuelve el valor tal cual y la validación falla.
+ */
+export function coerceItemsRoot(raw: unknown, depth = 0): unknown {
+  let value = raw;
+  if (typeof value === 'string') value = extractJsonValue(value) ?? value;
+  if (Array.isArray(value)) return { items: value };
+  if (!isRecord(value)) return value;
+  if (Array.isArray(value.items)) return value;
+
+  for (const key of ITEMS_KEYS) {
+    const candidate = value[key];
+    if (typeof candidate === 'string') {
+      const parsed = coerceItemsRoot(candidate, depth + 1);
+      if (isRecord(parsed) && Array.isArray(parsed.items)) return parsed;
+    }
+    if (Array.isArray(candidate)) return { items: candidate };
+  }
+
+  const arrays = Object.values(value).filter(Array.isArray);
+  if (arrays.length === 1) return { items: arrays[0] };
+
+  if (depth < 1) {
+    const nested = Object.values(value).filter(isRecord);
+    if (nested.length === 1) {
+      const inner = coerceItemsRoot(nested[0], depth + 1);
+      if (isRecord(inner) && Array.isArray(inner.items)) return inner;
+    }
+  }
+  return value;
+}
+
+/**
  * Valida la respuesta del modelo. Nada de lo que venga se confía: se descartan los ítems mal
  * formados, se normalizan las unidades y se ignora cualquier campo que no esté en el contrato.
- * Falla si no hay lista de ítems, o si había ítems y no sobrevivió ninguno (la respuesta no era la
- * pedida). Una lista vacía es válida: significa "no hay comida".
+ * Antes se intenta recuperar la lista si vino con otra forma (`coerceItemsRoot`). Falla si no hay
+ * lista de ítems, o si había ítems y no sobrevivió ninguno (la respuesta no era la pedida). Una
+ * lista vacía es válida: significa "no hay comida".
  */
 export function parseModelItems(raw: unknown): PhotoItem[] {
-  if (!isRecord(raw) || !Array.isArray(raw.items)) {
+  const root = coerceItemsRoot(raw);
+  if (!isRecord(root) || !Array.isArray(root.items)) {
     throw new AiError('bad_response', 'la respuesta no trae la lista de ítems');
   }
-  const items = raw.items.flatMap((entry) => parseItem(entry) ?? []).slice(0, MAX_ITEMS);
-  if (items.length === 0 && raw.items.length > 0) {
+  const items = root.items.flatMap((entry) => parseItem(entry) ?? []).slice(0, MAX_ITEMS);
+  if (items.length === 0 && root.items.length > 0) {
     throw new AiError('bad_response', 'ningún ítem de la respuesta era válido');
   }
   return items;

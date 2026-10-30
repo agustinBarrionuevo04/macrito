@@ -21,6 +21,27 @@ Se usa desde las pestañas **Foto** y **Texto** de `/add`.
   Los valores sugeridos tienen que ser plausibles y cerrar con Atwater (4/4/9). Si había ítems y no sobrevivió ninguno es
   un error (`ai_bad_response`); una lista vacía es "no hay comida".
 
+## Respuestas del modelo que no vienen como se pidió
+
+El prompt le exige al modelo responder **solo** con la herramienta, pero no se confía en eso: se aprovecha lo que haya
+en la respuesta para no tirar tokens ya pagados (`coerceItemsRoot`, `extractJsonValue`).
+
+- Si llamó a la herramienta, se usa su contenido; si llamó a otra, también.
+- Si contestó con **texto**, se busca el JSON ahí (bloque con cercas o el primer objeto/lista balanceado).
+- La lista puede venir como **texto JSON**, **suelta**, con **otro nombre** (`foods`, `alimentos`, …) o **anidada** un nivel.
+- Cada ítem acepta nombres alternativos (`name`/`nombre` por `query`, `grams`/`gramos` por `est_grams`).
+- Todo lo recuperado pasa por la misma validación estricta (gramos, unidades, campos fuera del contrato).
+- No se reintenta: un segundo pedido costaría tokens de nuevo. Si no hay nada recuperable, error controlado (`ai_bad_response`, 502).
+
+`max_tokens` es 2048: con varios ítems y sus valores por 100 g, 1024 se quedaba corto y la respuesta llegaba cortada.
+
+## Diagnóstico de errores
+
+Cada error del modelo se registra en el servidor (la terminal donde corre `pnpm dev`) con el código y un detalle **sin
+contenido del usuario ni la clave**: para HTTP, el código y el mensaje de la API (`HTTP 400 (invalid_request_error: …)`);
+para respuestas inútiles, `stop_reason`, los tipos de bloque y la _forma_ de lo recibido
+(`{items: array(3 de {query: string(12)})}`). Con `AI_DEBUG=1` se agrega la respuesta cruda recortada a 800 caracteres.
+
 ## Endpoints
 
 | Endpoint             | Entrada                                 | Respuesta                |

@@ -65,7 +65,7 @@ describe('createAnthropicProvider', () => {
 
   it('devuelve lo que trae la herramienta y los tokens usados', async () => {
     const { provider } = make(() => toolReply({ items: [{ query: 'milanesa' }] }));
-    expect(await provider.analyze(TEXT, 's')).toEqual({
+    expect(await provider.analyze(TEXT, 's')).toMatchObject({
       raw: { items: [{ query: 'milanesa' }] },
       usage: { inputTokens: 1200, outputTokens: 80 },
     });
@@ -103,22 +103,95 @@ describe('createAnthropicProvider', () => {
     }
   });
 
-  it('una respuesta sin llamada a la herramienta o que no es JSON es un error de respuesta', async () => {
+  it('una respuesta sin datos legibles es un error de respuesta, con la forma de lo recibido', async () => {
     for (const response of [
       () =>
         new Response(JSON.stringify({ content: [{ type: 'text', text: 'hola' }] }), {
           status: 200,
         }),
       () =>
-        new Response(JSON.stringify({ content: [{ type: 'tool_use', name: 'otra', input: {} }] }), {
-          status: 200,
-        }),
+        new Response(JSON.stringify({ content: [], stop_reason: 'max_tokens' }), { status: 200 }),
       () => new Response(JSON.stringify({}), { status: 200 }),
       () => new Response('<html>', { status: 200 }),
     ]) {
       const { provider } = make(response);
       expect(await codeOf(provider.analyze(TEXT, 's'))).toBe('bad_response');
     }
+    const { provider } = make(
+      () =>
+        new Response(
+          JSON.stringify({ content: [{ type: 'text', text: 'hola' }], stop_reason: 'end_turn' }),
+          { status: 200 },
+        ),
+    );
+    const error = await provider.analyze(TEXT, 's').catch((e: unknown) => e);
+    expect((error as Error).message).toContain('stop_reason=end_turn');
+    expect((error as Error).message).toContain('bloques=[text]');
+  });
+
+  it('si el modelo contestó con texto que trae el JSON, se aprovecha en vez de descartarlo', async () => {
+    const reply = (text: string) =>
+      new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text }],
+          usage: { input_tokens: 5, output_tokens: 7 },
+        }),
+        { status: 200 },
+      );
+    const { provider } = make(() => reply('Claro:\n```json\n{"items":[{"query":"pan"}]}\n```'));
+    const result = await provider.analyze(TEXT, 's');
+    expect(result.raw).toEqual({ items: [{ query: 'pan' }] });
+    expect(result.usage).toEqual({ inputTokens: 5, outputTokens: 7 });
+    expect(result.diagnostics).toContain('origen=texto');
+  });
+
+  it('si llamó a otra herramienta, se usa su contenido', async () => {
+    const { provider } = make(
+      () =>
+        new Response(
+          JSON.stringify({
+            content: [{ type: 'tool_use', name: 'otra', input: { foods: [{ name: 'pan' }] } }],
+          }),
+          { status: 200 },
+        ),
+    );
+    const result = await provider.analyze(TEXT, 's');
+    expect(result.raw).toEqual({ foods: [{ name: 'pan' }] });
+    expect(result.diagnostics).toContain('origen=herramienta otra');
+  });
+
+  it('el diagnóstico describe la forma de la respuesta sin su contenido', async () => {
+    const { provider } = make(() => toolReply({ items: [{ query: 'milanesa secreta' }] }));
+    const { diagnostics } = await provider.analyze(TEXT, 's');
+    expect(diagnostics).toContain('origen=herramienta');
+    expect(diagnostics).toContain('items: array(1 de {query: string(16)})');
+    expect(diagnostics).not.toContain('milanesa');
+  });
+
+  it('pide margen suficiente de tokens para varios ítems', async () => {
+    const { provider, fetchMock } = make(() => toolReply({ items: [] }));
+    await provider.analyze(TEXT, 's');
+    expect(JSON.parse(fetchMock.mock.calls[0]![1].body).max_tokens).toBeGreaterThanOrEqual(2048);
+  });
+
+  it('los errores HTTP incluyen lo que dijo la API (sin la clave)', async () => {
+    const apiError = (status: number) =>
+      new Response(
+        JSON.stringify({
+          type: 'error',
+          error: { type: 'invalid_request_error', message: 'model: nombre inválido' },
+        }),
+        { status },
+      );
+    const { provider } = make(() => apiError(400));
+    const error = await provider.analyze(TEXT, 's').catch((e: unknown) => e);
+    expect((error as AiError).code).toBe('bad_response');
+    expect((error as Error).message).toContain('HTTP 400');
+    expect((error as Error).message).toContain('invalid_request_error: model: nombre inválido');
+    expect((error as Error).message).not.toContain('key-123');
+    const unreadable = make(() => new Response('no json', { status: 500 }));
+    const second = await unreadable.provider.analyze(TEXT, 's').catch((e: unknown) => e);
+    expect((second as Error).message).toBe('HTTP 500');
   });
 
   it('un fallo de red es "unavailable"', async () => {
