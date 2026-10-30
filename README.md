@@ -42,7 +42,7 @@ Este repositorio es un fork de [OpenNutriTracker](https://github.com/simonoppowa
 - **Qué hace:** meta diaria personalizada, diario por comidas, búsqueda de alimentos (con tabla argentina ARGENFOODS), escáner de códigos de barras, y registro por foto o texto con IA (con pantalla de revisión).
 - **Stack:** Next.js (App Router) · TypeScript · Tailwind · Supabase (Auth, Postgres, RLS) · pensada para Vercel.
 - **Estado:** Fases 0 a 2 (MVP) terminadas en la rama `develop`. Falta progreso y gráficos, recetas, pulido y el deploy. Ver [`plans/PLAN_MACRITOS.md`](plans/PLAN_MACRITOS.md).
-- **Correrlo en tu máquina:** guía paso a paso en [`web/README.md`](web/README.md). En resumen, con Node ≥ 22, pnpm y Docker:
+- **Correrlo en tu máquina:** guía paso a paso en [`web/README.md`](web/README.md). En resumen, con Node ≥ 22, pnpm y Docker (si no tenés la CLI de Supabase instalada, usá `npx supabase@2.122.0` en lugar de `supabase`):
 
 ```sh
 cd web

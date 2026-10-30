@@ -19,7 +19,9 @@ Falta (Fases 3 y 4): progreso y gráficos, recetas, agua, pulido y deploy. Detal
 ## Requisitos
 
 - **Node ≥ 22** y **pnpm 10** (`corepack enable` alcanza).
-- **Docker** y la **CLI de Supabase** para correr Supabase en tu máquina. Instalación: <https://supabase.com/docs/guides/local-development/cli/getting-started>. Sin instalarla: `npx supabase@2.122.0 <comando>` (es la versión que usa el CI).
+- **Docker** y la **CLI de Supabase** para correr Supabase en tu máquina. Instalación: <https://supabase.com/docs/guides/local-development/cli/getting-started>.
+
+> **Si no instalaste la CLI**, en todos los comandos de esta guía reemplazá `supabase` por `npx supabase@2.122.0` (es la versión que usa el CI). Por ejemplo: `npx supabase@2.122.0 start` y `npx supabase@2.122.0 status -o env`.
 
 > ¿Sin Docker? Podés usar un proyecto de Supabase en la nube: ver [Usar un proyecto de Supabase en la nube](#usar-un-proyecto-de-supabase-en-la-nube).
 
@@ -53,7 +55,7 @@ Aplica solo las migraciones de `supabase/migrations/` y activa el hook que cierr
 supabase status -o env
 ```
 
-Usá `API_URL`, `ANON_KEY` y `SERVICE_ROLE_KEY` de esa salida. (Las versiones nuevas de la CLI también las muestran como clave "publishable" y "secret"; sirven las de siempre.)
+Usá `API_URL`, `ANON_KEY` y `SERVICE_ROLE_KEY` de esa salida. Las versiones nuevas de la CLI también muestran una clave **Publishable** (`sb_publishable_…`) y una **Secret** (`sb_secret_…`), que también se pueden usar: Publishable va en `NEXT_PUBLIC_SUPABASE_ANON_KEY` y Secret en `SUPABASE_SERVICE_ROLE_KEY`. Son claves de desarrollo local, no se usan en producción.
 
 **4. Crear `.env.local`**
 
