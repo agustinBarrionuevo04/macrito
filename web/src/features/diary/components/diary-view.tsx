@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { es } from '@/lib/i18n/es';
 import type { DailyTargets, MealType } from '@/types';
 import { groupByMeal, sumSnapshots } from '../totals';
+import { defaultMealFor } from '../meal';
 import { MEAL_ORDER, type DiaryEntry } from '../types';
 import { CopySheet, type CopySource } from './copy-sheet';
 import { DaySummary } from './day-summary';
@@ -110,13 +111,4 @@ export function DiaryView({ day, today, entries, targets }: Props) {
       />
     </>
   );
-}
-
-/** Comida sugerida según la hora del dispositivo. */
-function defaultMealFor(now: Date): MealType {
-  const hour = now.getHours();
-  if (hour < 11) return 'breakfast';
-  if (hour < 16) return 'lunch';
-  if (hour < 20) return 'snack';
-  return 'dinner';
 }
