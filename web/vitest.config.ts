@@ -17,6 +17,7 @@ export default defineConfig({
         'src/types/**',
         'src/app/**',
         'src/**/test-helpers.ts',
+        'src/test-utils/**',
       ],
       thresholds: {
         // El plan exige ≥ 95 % en el módulo de cálculo nutricional.
