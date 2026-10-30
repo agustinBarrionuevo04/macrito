@@ -11,7 +11,7 @@ const nullableNumeric = numeric.nullish().transform((v) => v ?? undefined);
 
 const portionsSchema = z.array(z.object({ label: z.string(), grams: numeric })).catch([]);
 
-const foodRowSchema = z.object({
+export const foodRowSchema = z.object({
   id: z.string(),
   source: z.enum(['off', 'usda', 'ar_seed', 'custom', 'ai_unverified']),
   source_id: z.string().nullable(),
