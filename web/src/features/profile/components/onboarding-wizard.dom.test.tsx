@@ -144,7 +144,11 @@ describe('OnboardingWizard', () => {
     fillUntilSummary();
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar y empezar' }));
     await waitFor(() => expect(alertText()).toContain('No pudimos guardar'));
-    expect(screen.getByRole('button', { name: 'Confirmar y empezar' })).toBeTruthy();
+    // El error aparece mientras la transición todavía figura como pendiente ("Guardando…"): el botón
+    // vuelve a su texto un instante después, así que hay que esperarlo.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Confirmar y empezar' })).toBeTruthy(),
+    );
   });
 
   it('atrás conserva lo cargado', () => {
