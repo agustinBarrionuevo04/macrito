@@ -44,6 +44,14 @@ describe('normalizeOffProduct', () => {
     });
   });
 
+  it('lee la marca de Search-a-licious, que la manda como lista', () => {
+    // Forma real de https://search.openfoodfacts.org/search (verificada el 2026-10-30).
+    expect(normalizeOffProduct({ ...base, brands: ['Lapataia', 'Otra'] })?.brand).toBe('Lapataia');
+    expect(normalizeOffProduct({ ...base, brands: ['', '  ', 'Mardel'] })?.brand).toBe('Mardel');
+    expect(normalizeOffProduct({ ...base, brands: [] })).not.toHaveProperty('brand');
+    expect(normalizeOffProduct({ ...base, brands: [3, null] })).not.toHaveProperty('brand');
+  });
+
   it('prefiere el nombre en español, después el genérico y después inglés', () => {
     expect(normalizeOffProduct({ ...base, product_name_es: 'Leche entera ES' })?.name).toBe(
       'Leche entera ES',

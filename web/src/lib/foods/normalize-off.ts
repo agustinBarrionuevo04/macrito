@@ -49,6 +49,12 @@ function pickPortions(p: Raw): Portion[] {
   return [{ label: text(p.serving_size) ?? '1 porción', grams: round2(grams) }];
 }
 
+/** `brands` es un texto separado por comas en la API v2 y una lista en Search-a-licious. */
+function pickBrand(value: unknown): string | undefined {
+  if (Array.isArray(value)) return text(value.find((item) => text(item) !== undefined));
+  return text(value)?.split(',')[0]?.trim() || undefined;
+}
+
 function optional(value: number | undefined): number | undefined {
   return value === undefined || value < 0 ? undefined : round2(value);
 }
@@ -88,7 +94,7 @@ export function normalizeOffProduct(raw: unknown): CatalogFood | null {
   if (sugar !== undefined) per100g.sugar_g = sugar;
   if (sodium !== undefined) per100g.sodium_mg = sodium;
 
-  const brand = text(raw.brands)?.split(',')[0]?.trim();
+  const brand = pickBrand(raw.brands);
   const countries = Array.isArray(raw.countries_tags) ? raw.countries_tags : [];
   const popularity = toNumber(raw.popularity_key);
 
