@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatIsoDate } from './format-date';
+import { formatIsoDate, formatShortDate } from './format-date';
 
 describe('formatIsoDate', () => {
   it('da vuelta a día/mes/año', () => {
@@ -18,5 +18,15 @@ describe('formatIsoDate', () => {
     expect(formatIsoDate('hoy')).toBe('hoy');
     expect(formatIsoDate('2026-3-5')).toBe('2026-3-5');
     expect(formatIsoDate('')).toBe('');
+  });
+});
+
+describe('formatShortDate', () => {
+  it('día/mes sin ceros ni año', () => {
+    expect(formatShortDate('2026-03-05')).toBe('5/3');
+    expect(formatShortDate('2026-12-25')).toBe('25/12');
+  });
+  it('un texto que no es fecha queda igual', () => {
+    expect(formatShortDate('hoy')).toBe('hoy');
   });
 });

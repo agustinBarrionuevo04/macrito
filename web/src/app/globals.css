@@ -18,9 +18,9 @@
   --primary-soft: #d1fae5;
   --danger: #b91c1c;
   --warning: #b45309;
-  --protein: #1d4ed8;
-  --carbs: #b45309;
-  --fat: #be185d;
+  --protein: #2a78d6;
+  --carbs: #eb6834;
+  --fat: #1baf7a;
 }
 
 :root[data-theme='dark'] {
@@ -36,9 +36,9 @@
   --primary-soft: #064e3b;
   --danger: #f87171;
   --warning: #fbbf24;
-  --protein: #60a5fa;
-  --carbs: #fbbf24;
-  --fat: #f472b6;
+  --protein: #3987e5;
+  --carbs: #d95926;
+  --fat: #199e70;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -55,9 +55,9 @@
     --primary-soft: #064e3b;
     --danger: #f87171;
     --warning: #fbbf24;
-    --protein: #60a5fa;
-    --carbs: #fbbf24;
-    --fat: #f472b6;
+    --protein: #3987e5;
+    --carbs: #d95926;
+    --fat: #199e70;
   }
 }
 
