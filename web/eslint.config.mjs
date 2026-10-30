@@ -8,6 +8,8 @@ const eslintConfig = defineConfig([
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
+      // Descartar una propiedad al desestructurar (`const { a, ...resto } = obj`) no es una variable sin uso.
+      '@typescript-eslint/no-unused-vars': ['warn', { ignoreRestSiblings: true }],
     },
   },
   // Override default ignores of eslint-config-next.

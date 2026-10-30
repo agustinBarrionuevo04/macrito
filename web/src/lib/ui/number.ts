@@ -16,13 +16,6 @@ export function isPartialDecimal(text: string): boolean {
   return DECIMAL.test(text.trim());
 }
 
-export function clamp(value: number, min?: number, max?: number): number {
-  let result = value;
-  if (min !== undefined && result < min) result = min;
-  if (max !== undefined && result > max) result = max;
-  return result;
-}
-
 /** Formatea para mostrar, con la coma decimal de es-AR y hasta `decimals` decimales. */
 export function formatNumber(value: number, decimals = 1): string {
   return new Intl.NumberFormat('es-AR', { maximumFractionDigits: decimals }).format(value);
