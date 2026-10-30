@@ -10,5 +10,8 @@ export function getAiService() {
     provider: createProviderFromEnv(process.env),
     usage: createUsageTracker(createAdminClient()),
     limits: limitsFrom(process.env),
+    ...(process.env.AI_DEBUG === '1'
+      ? { debug: (message: string) => console.error('[ai]', message) }
+      : {}),
   });
 }

@@ -71,7 +71,7 @@ describe('createAiService', () => {
 
   it('una respuesta inválida del modelo consume cupo y tokens (se gastaron) y falla', async () => {
     const { service, usage } = make({
-      analyze: vi.fn().mockResolvedValue(reply({ items: [{ nombre: 'huevo' }] })),
+      analyze: vi.fn().mockResolvedValue(reply({ items: [{ producto_raro: 'huevo' }] })),
     });
     await expect(service.analyzeText('u1', 'd', 'x')).rejects.toMatchObject({
       code: 'bad_response',
@@ -87,5 +87,43 @@ describe('createAiService', () => {
     const { service } = make({ analyze }, usage);
     await expect(service.analyzeText('u1', 'd', 'x')).rejects.toThrow('db');
     expect(analyze).not.toHaveBeenCalled();
+  });
+});
+
+describe('createAiService: diagnóstico de respuestas inválidas', () => {
+  const bad = { items: [{ producto_raro: 'huevo' }] };
+
+  it('el error trae la forma de la respuesta que mandó el proveedor', async () => {
+    const analyze = vi.fn().mockResolvedValue({
+      raw: bad,
+      usage: { inputTokens: 1, outputTokens: 1 },
+      diagnostics: 'stop_reason=end_turn; origen=herramienta',
+    });
+    const { service } = make({ analyze });
+    const error = await service.analyzeText('u1', 'd', 'x').catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'bad_response' });
+    expect((error as Error).message).toContain('ningún ítem');
+    expect((error as Error).message).toContain('stop_reason=end_turn');
+  });
+
+  it('con depuración activa registra la respuesta cruda (recortada); sin ella, no', async () => {
+    const analyze = vi.fn().mockResolvedValue({
+      raw: bad,
+      usage: { inputTokens: 1, outputTokens: 1 },
+      diagnostics: 'x',
+    });
+    const debug = vi.fn();
+    const withDebug = createAiService({
+      provider: { analyze },
+      usage: tracker(),
+      limits: { photo: 1, text: 1 },
+      debug,
+    });
+    await expect(withDebug.analyzeText('u', 'd', 'x')).rejects.toBeDefined();
+    expect(debug).toHaveBeenCalledWith(expect.stringContaining('producto_raro'));
+
+    const quiet = make({ analyze });
+    await expect(quiet.service.analyzeText('u', 'd', 'x')).rejects.toBeDefined();
+    expect(debug).toHaveBeenCalledTimes(1);
   });
 });

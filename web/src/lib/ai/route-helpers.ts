@@ -58,6 +58,8 @@ export function responseForError(error: unknown, route: string): NextResponse {
     return errorResponse('quota_exceeded', 429, { limit: error.limit });
   }
   if (error instanceof AiError) {
+    // El mensaje trae el código HTTP del proveedor y la forma de la respuesta, nunca la clave ni lo que comió la persona.
+    console.error(`${route}: ${error.code}: ${error.message}`);
     switch (error.code) {
       case 'not_configured':
         return errorResponse('ai_not_configured', 503);
@@ -69,7 +71,6 @@ export function responseForError(error: unknown, route: string): NextResponse {
         return errorResponse('image_rejected', 422);
       case 'unauthorized':
         // La clave del proveedor es inválida: es un problema de configuración, no del usuario.
-        console.error(`${route}: el proveedor de IA rechazó la clave`);
         return errorResponse('ai_unavailable', 503);
       default:
         return errorResponse('ai_unavailable', 503);

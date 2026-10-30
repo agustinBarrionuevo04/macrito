@@ -145,6 +145,15 @@ describe('POST /api/ai/photo', () => {
     expect(JSON.stringify(body)).not.toContain('inesperado');
   });
 
+  it('registra el motivo de un error del modelo (código y detalle) en el servidor', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    h.analyzePhoto.mockRejectedValue(
+      new AiError('bad_response', 'HTTP 400 (invalid_request_error: x)'),
+    );
+    await photoRoute(photoRequest(jpegFile()));
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('ai/photo: bad_response: HTTP 400'));
+  });
+
   it('el límite diario informa cuál es', async () => {
     h.analyzePhoto.mockRejectedValue(new QuotaExceededError('photo', 20));
     expect(await (await photoRoute(photoRequest(jpegFile()))).json()).toEqual({

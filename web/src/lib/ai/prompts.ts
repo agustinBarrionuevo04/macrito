@@ -1,3 +1,6 @@
+/** Cómo responder: solo con la herramienta, nada de texto alrededor. */
+const OUTPUT_RULE = `Respondé ÚNICAMENTE llamando a la herramienta "log_meal_items", con el campo "items" (una lista). No escribas texto antes ni después, no uses otros nombres de campos y no agregues explicaciones: todo lo que escribas fuera de la herramienta se descarta.`;
+
 /** Reglas comunes: la nutrición sale de la base de datos, no del modelo. */
 const SHARED_RULES = `
 - "query" es el nombre del alimento solo, sin cantidades, en español rioplatense ("milanesa de pollo", "puré de papa", "gaseosa cola"). Mantené la marca solo si se lee.
@@ -6,7 +9,7 @@ const SHARED_RULES = `
 - "per100g_guess": para cada entrada, los valores típicos por 100 g (kcal, proteínas, carbohidratos y grasas). Solo se usan si el alimento no está en la base de datos. Tienen que ser coherentes: kcal ≈ 4 × proteínas + 4 × carbohidratos + 9 × grasas.
 - No inventes recetas ni platos que no podés identificar: describí lo que ves ("guiso de carne").`;
 
-export const PHOTO_SYSTEM = `Identificás los alimentos visibles en la foto de una comida para buscarlos en una base de datos de alimentos. Respondés SOLO usando la herramienta.
+export const PHOTO_SYSTEM = `Identificás los alimentos visibles en la foto de una comida para buscarlos en una base de datos de alimentos. ${OUTPUT_RULE}
 
 Reglas:
 ${SHARED_RULES}
@@ -15,7 +18,7 @@ ${SHARED_RULES}
 - "est_grams": estimá los gramos TOTALES de cada alimento usando las referencias de escala que haya en la foto (el plato, los cubiertos, la mano, el envase). Es una estimación y la persona la va a revisar: si no podés estimarla de forma razonable, omitila.
 - Si no hay comida en la foto, devolvé la lista vacía.`;
 
-export const TEXT_SYSTEM = `Extraés los alimentos de la descripción de una comida para buscarlos en una base de datos de alimentos. Respondés SOLO usando la herramienta.
+export const TEXT_SYSTEM = `Extraés los alimentos de la descripción de una comida para buscarlos en una base de datos de alimentos. ${OUTPUT_RULE}
 
 Reglas:
 ${SHARED_RULES}

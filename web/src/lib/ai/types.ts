@@ -8,6 +8,8 @@ export type AiAnalysis = {
   /** Lo que devolvió el modelo en la herramienta, sin validar. */
   raw: unknown;
   usage: AiUsage;
+  /** Forma de lo que devolvió el proveedor (sin su contenido), para el registro de errores. */
+  diagnostics?: string;
 };
 
 export type AiErrorCode =
