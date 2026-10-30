@@ -29,7 +29,7 @@ Tokens de color como variables CSS en `src/app/globals.css` (`bg-surface`, `text
 
 ## Componentes (`src/components/ui/`)
 
-`Button` · `Dialog` y `Sheet` (sobre `<dialog>` nativo: foco, Esc y fondo inerte los resuelve el navegador) · `NumberInput` (teclado decimal, coma o punto, límites al salir del campo) · `ProgressRing` · `MacroBar` · `Toast` (`useToast`, con acción "Deshacer") · `Skeleton` · `BottomNav` · `ThemeToggle`. La lógica numérica y de navegación vive en `src/lib/ui/` con tests; los componentes se prueban renderizados en el servidor.
+`Button` · `Dialog` y `Sheet` (sobre `<dialog>` nativo: foco, Esc y fondo inerte los resuelve el navegador) · `NumberInput` (teclado decimal, coma o punto; nunca modifica lo escrito: el rango lo valida el formulario) · `ProgressRing` · `MacroBar` · `Toast` (`useToast`, con acción "Deshacer") · `Skeleton` · `BottomNav` · `ThemeToggle`. La lógica numérica y de navegación vive en `src/lib/ui/` con tests; los componentes se prueban renderizados en el servidor.
 
 `app/(app)/layout.tsx` envuelve las pantallas con sesión con la navegación inferior. Las rutas `/add`, `/progress` y `/profile` las crean 2-F, 2-G, 3-I y 2-E.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clamp, formatNumber, isPartialDecimal, parseDecimal } from './number';
+import { formatNumber, isPartialDecimal, parseDecimal } from './number';
 
 describe('parseDecimal', () => {
   it('acepta coma y punto decimal', () => {
@@ -23,17 +23,6 @@ describe('isPartialDecimal', () => {
     for (const ok of ['', '1', '1,', ',5', '12.5', '0,0'])
       expect(isPartialDecimal(ok), ok).toBe(true);
     for (const bad of ['a', '1a', '--1', '1,2,3']) expect(isPartialDecimal(bad), bad).toBe(false);
-  });
-});
-
-describe('clamp', () => {
-  it('limita por los dos extremos y respeta los opcionales', () => {
-    expect(clamp(5, 0, 10)).toBe(5);
-    expect(clamp(-1, 0, 10)).toBe(0);
-    expect(clamp(11, 0, 10)).toBe(10);
-    expect(clamp(-1)).toBe(-1);
-    expect(clamp(3, 5)).toBe(5);
-    expect(clamp(30, undefined, 20)).toBe(20);
   });
 });
 

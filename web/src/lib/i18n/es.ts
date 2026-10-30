@@ -92,6 +92,145 @@ export const es = {
       description: 'No se pudo cargar esta pantalla. Revisá tu conexión y volvé a intentar.',
     },
   },
+  profile: {
+    disclaimer:
+      'Las metas son estimaciones, no consejo médico. Si tenés una condición de salud, estás embarazada o tenés antecedentes de trastornos de la alimentación, consultá a un profesional antes de cambiar tu alimentación.',
+    back: 'Atrás',
+    next: 'Siguiente',
+    save: 'Guardar',
+    saved: 'Cambios guardados',
+    saving: 'Guardando…',
+    optional: 'opcional',
+    onboarding: {
+      step: 'Paso {current} de {total}',
+      welcomeTitle: 'Armemos tu meta diaria',
+      welcomeText:
+        'Te hacemos unas preguntas cortas, una sola vez, para calcular cuántas calorías y macros necesitás por día. Después podés cambiar cualquier dato desde tu perfil.',
+      start: 'Empezar',
+      confirm: 'Confirmar y empezar',
+      confirming: 'Guardando…',
+      summaryTitle: 'Tu meta diaria',
+    },
+    fields: {
+      displayName: 'Nombre',
+      sexTitle: '¿Cuál es tu sexo?',
+      sexHelp: 'Lo usa la fórmula para estimar tu gasto de energía.',
+      male: 'Masculino',
+      female: 'Femenino',
+      birthTitle: '¿Cuándo naciste?',
+      birthDate: 'Fecha de nacimiento',
+      bodyTitle: 'Tu altura y tu peso',
+      height: 'Altura',
+      weight: 'Peso actual',
+      activityTitle: '¿Cuánto te movés en un día normal?',
+      goalTitle: '¿Cuál es tu objetivo?',
+      paceTitle: 'Ritmo',
+      paceHelp: 'Cuánto querés cambiar tu peso por semana.',
+      targetWeight: 'Peso objetivo',
+      macrosTitle: '¿Cómo repartimos tus macros?',
+      macrosHelp: 'Se puede cambiar después desde el perfil.',
+    },
+    activity: {
+      sedentary: {
+        title: 'Sedentario',
+        description: 'Casi todo el día sentado o en tareas livianas, sin ejercicio regular.',
+      },
+      low_active: {
+        title: 'Poco activo',
+        description:
+          'Caminás o hacés ejercicio suave de 30 a 60 minutos por día, o te movés bastante en el trabajo.',
+      },
+      active: {
+        title: 'Activo',
+        description: 'Ejercicio moderado o un trabajo físico de alrededor de 1 hora por día.',
+      },
+      very_active: {
+        title: 'Muy activo',
+        description:
+          'Más de 1 hora de ejercicio intenso por día, o un trabajo muy exigente físicamente.',
+      },
+    },
+    goals: {
+      lose: 'Bajar de peso',
+      maintain: 'Mantener mi peso',
+      gain: 'Subir de peso',
+    },
+    pace: {
+      label: '{kg} kg por semana',
+      kcal: 'unas {kcal} kcal por día',
+      gentle: 'suave',
+      moderate: 'moderado',
+      intense: 'intenso',
+      veryIntense: 'muy intenso',
+    },
+    presets: {
+      high_protein: {
+        title: 'Alto en proteína',
+        description:
+          'Proteína según tu peso y objetivo (2 g por kg si bajás, 1,6 si mantenés, 1,8 si subís), 25 % de grasas y el resto en carbohidratos.',
+      },
+      balanced: {
+        title: 'Equilibrado',
+        description: '50 % carbohidratos, 30 % grasas, 20 % proteínas.',
+      },
+      classic: {
+        title: 'Clásico',
+        description: '60 % carbohidratos, 25 % grasas, 15 % proteínas.',
+      },
+    },
+    summary: {
+      kcal: 'kcal por día',
+      tee: 'Gasto estimado (TEE)',
+      goalAdjustment: 'Ajuste por tu objetivo',
+      manualAdjustment: 'Ajuste manual',
+      goal: 'Meta diaria',
+      protein: 'Proteínas',
+      carbs: 'Carbohidratos',
+      fat: 'Grasas',
+      howTitle: 'Cómo se calculó',
+      howText:
+        'Gasto estimado con la ecuación del Instituto de Medicina de EE.UU. (2005) según tu sexo, edad, altura, peso y nivel de actividad; más el ajuste de tu objetivo.',
+    },
+    warnings: {
+      below_kcal_floor:
+        'Tu objetivo daba {raw} kcal por día, por debajo del mínimo recomendado ({floor} kcal). Ajustamos la meta al mínimo. Si querés bajar más rápido, consultá a un profesional de la salud.',
+      adult_equations_under_19:
+        'Para menores de 19 años el cálculo es una aproximación, porque usa las ecuaciones de adultos. Consultá a un profesional.',
+      weekly_goal_ignored:
+        'El ritmo elegido no coincide con tu objetivo, así que usamos el ajuste estándar.',
+      protein_capped:
+        'La proteína que corresponde a tu peso no entra en tus calorías; la ajustamos.',
+    },
+    page: {
+      title: 'Perfil',
+      targetTitle: 'Tu meta diaria',
+      weightTitle: 'Registrar peso',
+      weightToday: 'Peso de hoy',
+      weightSaved: 'Peso registrado',
+      weightHistory: 'Últimos registros',
+      dataTitle: 'Tus datos',
+      appearanceTitle: 'Apariencia',
+      accountTitle: 'Cuenta',
+      aboutTitle: 'Acerca de',
+    },
+    errors: {
+      sex: 'Elegí una opción.',
+      birthDate: 'Ingresá tu fecha de nacimiento.',
+      birthDateInvalid: 'La fecha no es válida.',
+      age: 'Macritos es para mayores de 13 años.',
+      height: 'Ingresá una altura entre {min} y {max} cm.',
+      weight: 'Ingresá un peso entre {min} y {max} kg.',
+      activity: 'Elegí tu nivel de actividad.',
+      goal: 'Elegí tu objetivo.',
+      pace: 'Elegí un ritmo.',
+      targetWeight: 'Ingresá un peso entre {min} y {max} kg, o dejalo vacío.',
+      targetWeightLose: 'Para bajar de peso, el peso objetivo tiene que ser menor que el actual.',
+      targetWeightGain: 'Para subir de peso, el peso objetivo tiene que ser mayor que el actual.',
+      displayName: 'El nombre puede tener hasta {max} caracteres.',
+      sessionExpired: 'Tu sesión venció. Volvé a ingresar.',
+      generic: 'No pudimos guardar los datos. Probá de nuevo.',
+    },
+  },
   foods: {
     attribution: {
       // Exigido por las condiciones de uso de ARGENFOODS: citar a los titulares y la referencia
