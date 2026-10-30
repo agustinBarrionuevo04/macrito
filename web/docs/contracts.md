@@ -77,25 +77,41 @@ Convenciones: los tipos de nutrición usan `snake_case` (`protein_g`) como en el
 
 ## 3. Funciones y APIs contractuales
 
-| Contrato                                                                                   | Dueño |
-| ------------------------------------------------------------------------------------------ | ----- |
-| `computeTargets(profile: UserProfile): DailyTargets` — función pura                        | 1-B   |
-| `POST /api/foods/search?q=` → `Food[]`                                                     | 1-C   |
-| `GET /api/foods/barcode/:code` → `Food \| null`                                            | 1-C   |
-| `POST /api/ai/photo` (multipart, imagen) → `{ items: PhotoItem[] }`                        | 2-H   |
-| `POST /api/ai/text` (`{ text }`) → `{ items: PhotoItem[] }`                                | 2-H   |
-| `addEntry(draft: EntryDraft, date: string)`, `updateEntry`, `deleteEntry` — Server Actions | 2-F   |
-| `<FoodPicker onSelect={(food) => …} />`                                                    | 2-G   |
-| `<PortionSheet food onConfirm={(draft: EntryDraft) => …} />`                               | 2-G   |
+| Contrato                                                                           | Dueño |
+| ---------------------------------------------------------------------------------- | ----- |
+| `computeTargets(profile: UserProfile): DailyTargets` — función pura                | 1-B   |
+| `GET /api/foods/search?q=` → `Food[]` (el plan nombra `POST`; se implementó `GET`) | 1-C   |
+| `GET /api/foods/barcode/:code` → `Food \| null`                                    | 1-C   |
+| `POST /api/ai/photo` (multipart, imagen) → `{ items: PhotoItem[] }`                | 2-H   |
+| `POST /api/ai/text` (`{ text }`) → `{ items: PhotoItem[] }`                        | 2-H   |
+| Server Actions del diario (firmas en la sección 3.1)                               | 2-F   |
+| `<FoodPicker onSelect={(food) => …} />`                                            | 2-G   |
+| `<PortionSheet food onConfirm={(draft: EntryDraft) => …} />`                       | 2-G   |
 
 El flujo de agregar alimento (2-G) y la IA (2-H) **solo** llaman a `addEntry`; nunca escriben directo a la base.
 
+### 3.1 Server Actions del diario (2-F)
+
+Todas devuelven `{ ok: true, … } | { ok: false, error }`; `error` es un mensaje ya traducido. Validan con zod, exigen
+sesión y dependen de la RLS para no tocar filas ajenas. Detalle en `docs/diary.md`.
+
+| Acción                                                                          | Resultado             | Notas                                                                                                                 |
+| ------------------------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `addEntry(draft: EntryDraft, date: string)`                                     | `{ ok: true, id }`    | De `draft.food` solo se usa el `id`: el servidor lee el alimento de la base y calcula el snapshot.                    |
+| `addQuickEntry({ name?, kcal, protein_g?, carbs_g?, fat_g?, meal_type }, date)` | `{ ok: true, id }`    | Calorías sin alimento: `origin = 'manual'`, `food_id = null`, `quantity_g = 0`, `is_estimate = false`.                |
+| `updateEntry(id, { quantity_g?, meal_type? })`                                  | `{ ok: true }`        | Reescala kcal y macros proporcionalmente desde la propia entrada (no desde el alimento). Sin cantidad en las rápidas. |
+| `deleteEntry(id)`                                                               | `{ ok: true }`        |                                                                                                                       |
+| `restoreEntry(entrada + day)`                                                   | `{ ok: true, id }`    | "Deshacer": reinserta con los mismos datos y la misma `created_at` (id nuevo; no hay borrado lógico).                 |
+| `copyEntries({ source, toDay, toMeal? })`                                       | `{ ok: true, count }` | `source`: una entrada, una comida o un día. Copias con `origin = 'copy'`.                                             |
+
+Acciones de 2-G (`features/add-food/actions.ts`): `createCustomFood`, `updateCustomFood` y `setFavorite`.
+
 ## 4. Puntos abiertos
 
-Huecos detectados al escribir los tipos. No se resolvieron por suposición: están pendientes de decisión.
+Huecos detectados al escribir los tipos y cómo se resolvieron.
 
-1. `updateEntry` y `deleteEntry`: el plan no fija firmas ni tipo de retorno de las tres Server Actions.
-2. Quick-add de kcal sin alimento (2-F): `EntryDraft` exige `food: Food`, pero el quick-add no tiene alimento.
-3. Alimento sin match (decisión abierta 2): `PhotoItem` no tiene campo para las macros por 100 g que sugiere el modelo.
-4. Desglose del onboarding (2-E): pide mostrar TEE y ajuste, pero `computeTargets` devuelve solo `DailyTargets`. Lo mismo para el aviso de piso de seguridad (1-B).
-5. Macros por defecto (decisión abierta 3): el plan remite a una "sección 3.2" que no existe.
+1. **Resuelto (2-F).** Firmas y retorno de `updateEntry` y `deleteEntry`: ver la sección 3.1.
+2. **Resuelto (2-F).** Quick-add sin alimento: acción aparte, `addQuickEntry`; `EntryDraft` no cambia.
+3. **Resuelto (2-H).** `PhotoItem` gana el campo opcional `per100g_guess` con las macros por 100 g que sugiere el modelo; solo se usan si el alimento no está en la base (se crea un `ai_unverified`).
+4. **Resuelto (1-B).** `calcTargets(profile)` devuelve el desglose (TEE, ajuste, meta, macros, avisos); `computeTargets` sigue devolviendo solo `DailyTargets`.
+5. **Resuelto (1-B).** Los macros por defecto están en `docs/nutrition.md`.
