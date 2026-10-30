@@ -92,4 +92,12 @@ export const es = {
       description: 'No se pudo cargar esta pantalla. Revisá tu conexión y volvé a intentar.',
     },
   },
+  foods: {
+    attribution: {
+      // Exigido por las condiciones de uso de ARGENFOODS: citar a los titulares y la referencia
+      // electrónica completa. Mostrarlo donde se vean alimentos de origen `ar_seed`.
+      argenfoods:
+        'Composición de alimentos: ARGENFOODS, Universidad Nacional de Luján (UNLu), Argentina. https://www.argenfood.unlu.edu.ar/. Uso sin fines comerciales.',
+    },
+  },
 } as const;

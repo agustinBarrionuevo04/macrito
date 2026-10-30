@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:test": "bash supabase/local/run-tests.sh",
-    "db:seed-allowlist": "node --env-file=.env.local scripts/seed-allowlist.mjs"
+    "db:seed-allowlist": "node --env-file=.env.local scripts/seed-allowlist.mjs",
+    "db:load-argenfoods": "node --env-file-if-exists=.env.local scripts/load-argenfoods.mjs"
   },
   "dependencies": {
     "@serwist/turbopack": "^9.5.13",
