@@ -1,0 +1,142 @@
+import type { Confidence, PhotoItem } from '@/types';
+import { isPlausible, toNumber } from '@/lib/foods/nutrition-check';
+import { AiError } from './types';
+import { AI_UNITS, isAiUnit, toGrams } from './units';
+
+export const TOOL_NAME = 'log_meal_items';
+export const TOOL_DESCRIPTION = 'Registrar los alimentos que se identificaron.';
+
+/** Gramos máximos de un solo ítem. Más que esto casi seguro es un error de unidad (×1000). */
+export const MAX_ITEM_GRAMS = 3000;
+export const MAX_ITEMS = 15;
+export const MAX_COUNT = 50;
+const MAX_QUERY_LENGTH = 80;
+
+/**
+ * Esquema de la herramienta (JSON Schema). Es una pista para el modelo, no una garantía:
+ * `parseModelItems` valida todo de nuevo, aunque el modelo ignore el esquema.
+ */
+export const TOOL_SCHEMA = {
+  type: 'object',
+  properties: {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'Nombre del alimento en español rioplatense, sin cantidades.',
+          },
+          est_grams: {
+            type: 'number',
+            description:
+              'Gramos estimados del total de este alimento. Omitir si no se puede estimar.',
+          },
+          count: {
+            type: 'integer',
+            description: 'Cantidad de unidades visibles o mencionadas (2 milanesas, 3 empanadas).',
+          },
+          amount: { type: 'number', description: 'Solo texto: cantidad que escribió la persona.' },
+          unit: {
+            type: 'string',
+            enum: [...AI_UNITS],
+            description: 'Solo texto: unidad que escribió la persona, solo si es una de estas.',
+          },
+          confidence: { type: 'string', enum: ['low', 'med', 'high'] },
+          per100g_guess: {
+            type: 'object',
+            description: 'Valores típicos por 100 g de este alimento, por si no está en la base.',
+            properties: {
+              kcal: { type: 'number' },
+              protein_g: { type: 'number' },
+              carbs_g: { type: 'number' },
+              fat_g: { type: 'number' },
+            },
+            required: ['kcal', 'protein_g', 'carbs_g', 'fat_g'],
+          },
+        },
+        required: ['query', 'confidence'],
+      },
+    },
+  },
+  required: ['items'],
+} as const;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const positive = (value: unknown): number | undefined => {
+  const n = toNumber(value);
+  return n !== undefined && n > 0 ? n : undefined;
+};
+
+function parseGuess(value: unknown): PhotoItem['per100g_guess'] {
+  if (!isRecord(value)) return undefined;
+  const kcal = toNumber(value.kcal);
+  const protein_g = toNumber(value.protein_g);
+  const carbs_g = toNumber(value.carbs_g);
+  const fat_g = toNumber(value.fat_g);
+  if (
+    kcal === undefined ||
+    protein_g === undefined ||
+    carbs_g === undefined ||
+    fat_g === undefined
+  ) {
+    return undefined;
+  }
+  const guess = { kcal, protein_g, carbs_g, fat_g };
+  if (!isPlausible(guess)) return undefined;
+  // Las kcal tienen que cerrar con los macros (Atwater 4/4/9), con margen para fibra y alcohol.
+  const fromMacros = 4 * protein_g + 4 * carbs_g + 9 * fat_g;
+  return Math.abs(kcal - fromMacros) <= Math.max(40, 0.3 * Math.max(kcal, fromMacros))
+    ? guess
+    : undefined;
+}
+
+function parseGrams(raw: Record<string, unknown>): number | null {
+  const amount = positive(raw.amount);
+  const grams =
+    amount !== undefined && isAiUnit(raw.unit)
+      ? toGrams(amount, raw.unit)
+      : positive(raw.est_grams);
+  return grams !== undefined && grams <= MAX_ITEM_GRAMS ? Math.round(grams * 100) / 100 : null;
+}
+
+function parseItem(raw: unknown): PhotoItem | null {
+  if (!isRecord(raw) || typeof raw.query !== 'string') return null;
+  const query = raw.query.trim().replace(/\s+/g, ' ');
+  if (query.length === 0 || query.length > MAX_QUERY_LENGTH) return null;
+
+  const item: PhotoItem = {
+    query,
+    est_grams: parseGrams(raw),
+    confidence: (['low', 'med', 'high'] as const).includes(raw.confidence as Confidence)
+      ? (raw.confidence as Confidence)
+      : 'low',
+  };
+  const count = toNumber(raw.count);
+  if (count !== undefined && Number.isInteger(count) && count >= 1 && count <= MAX_COUNT) {
+    item.count = count;
+  }
+  const guess = parseGuess(raw.per100g_guess);
+  if (guess) item.per100g_guess = guess;
+  return item;
+}
+
+/**
+ * Valida la respuesta del modelo. Nada de lo que venga se confía: se descartan los ítems mal
+ * formados, se normalizan las unidades y se ignora cualquier campo que no esté en el contrato.
+ * Falla si no hay lista de ítems, o si había ítems y no sobrevivió ninguno (la respuesta no era la
+ * pedida). Una lista vacía es válida: significa "no hay comida".
+ */
+export function parseModelItems(raw: unknown): PhotoItem[] {
+  if (!isRecord(raw) || !Array.isArray(raw.items)) {
+    throw new AiError('bad_response', 'la respuesta no trae la lista de ítems');
+  }
+  const items = raw.items.flatMap((entry) => parseItem(entry) ?? []).slice(0, MAX_ITEMS);
+  if (items.length === 0 && raw.items.length > 0) {
+    throw new AiError('bad_response', 'ningún ítem de la respuesta era válido');
+  }
+  return items;
+}

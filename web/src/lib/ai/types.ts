@@ -1,0 +1,43 @@
+/** Lo que se le pide analizar al modelo. */
+export type AiContent =
+  { kind: 'text'; text: string } | { kind: 'photo'; mediaType: 'image/jpeg'; base64: string };
+
+export type AiUsage = { inputTokens: number; outputTokens: number };
+
+export type AiAnalysis = {
+  /** Lo que devolvió el modelo en la herramienta, sin validar. */
+  raw: unknown;
+  usage: AiUsage;
+};
+
+export type AiErrorCode =
+  /** Falta la clave o el proveedor configurado no existe. */
+  | 'not_configured'
+  /** El proveedor rechazó nuestra clave (problema nuestro, no del usuario). */
+  | 'unauthorized'
+  | 'rate_limited'
+  | 'unavailable'
+  | 'timeout'
+  /** La respuesta no tenía lo pedido o no sobrevivió la validación. */
+  | 'bad_response'
+  /** El proveedor no pudo procesar la imagen. */
+  | 'image_rejected';
+
+export class AiError extends Error {
+  constructor(
+    readonly code: AiErrorCode,
+    message: string,
+    options?: { cause?: unknown },
+  ) {
+    super(message, options);
+    this.name = 'AiError';
+  }
+}
+
+/**
+ * Proveedor de modelo intercambiable. Agregar uno nuevo no toca el esquema ni los prompts: solo
+ * cambia cómo se manda el pedido y cómo se lee la respuesta.
+ */
+export type AiProvider = {
+  analyze(content: AiContent, system: string, signal?: AbortSignal): Promise<AiAnalysis>;
+};
