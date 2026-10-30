@@ -35,6 +35,32 @@
   <a href="https://hosted.weblate.org/engage/opennutritracker/">Translate</a>
 </p>
 
+## Macritos (variante web de este repositorio)
+
+Este repositorio es un fork de [OpenNutriTracker](https://github.com/simonoppowa/OpenNutriTracker). Además de la app móvil original (Flutter, el resto de este README), contiene **Macritos**: una PWA de conteo de calorías para varias personas, con registro cerrado por invitación, que vive en [`web/`](web/).
+
+- **Qué hace:** meta diaria personalizada, diario por comidas, búsqueda de alimentos (con tabla argentina ARGENFOODS), escáner de códigos de barras, y registro por foto o texto con IA (con pantalla de revisión).
+- **Stack:** Next.js (App Router) · TypeScript · Tailwind · Supabase (Auth, Postgres, RLS) · pensada para Vercel.
+- **Estado:** Fases 0 a 2 (MVP) terminadas en la rama `develop`. Falta progreso y gráficos, recetas, pulido y el deploy. Ver [`plans/PLAN_MACRITOS.md`](plans/PLAN_MACRITOS.md).
+- **Correrlo en tu máquina:** guía paso a paso en [`web/README.md`](web/README.md). En resumen, con Node ≥ 22, pnpm y Docker:
+
+```sh
+cd web
+pnpm install
+supabase start                   # Supabase local (migraciones y registro cerrado incluidos)
+supabase status -o env           # copiar API_URL, ANON_KEY y SERVICE_ROLE_KEY
+cp .env.example .env.local       # completar las claves y ALLOWED_EMAILS=tu@email.com
+pnpm db:seed-allowlist           # autoriza tu email para registrarte
+pnpm dev                         # http://localhost:3000
+```
+
+- **Flujo de trabajo:** una rama por cambio (`feat/…`, `fix/…`), PR a `develop`; `main` se actualiza al cerrar cada etapa.
+- **Licencia:** GPL-3.0, igual que el proyecto original. Los datos de alimentos de terceros (ARGENFOODS, Open Food Facts, USDA) se consultan o cargan en tu propia base; no se incluyen en el repositorio.
+
+Lo que sigue describe la app móvil original.
+
+---
+
 OpenNutriTracker logs what you eat and drink against a calorie and macro target it works
 out from your height, weight, age, and activity level, and keeps the record on your phone.
 It is for anyone who wants the numbers without handing their eating history to a company,
