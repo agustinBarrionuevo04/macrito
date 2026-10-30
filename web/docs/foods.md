@@ -37,4 +37,8 @@ Errores: `{ "error": code }` con `unauthorized` (401), `rate_limited` (429, con 
 
 - **USDA está en inglés**: una búsqueda en español ("leche entera") no encuentra nada ahí. El español lo cubren OFF y `ar_seed`.
 - Las búsquedas con pocas coincidencias reales (por ejemplo 3 resultados) consultan las fuentes externas cada vez, porque no hay caché por consulta; solo salen directo del catálogo las que tienen 8 o más.
-- Las formas de respuesta de OFF y USDA se tomaron de los DTOs de OpenNutriTracker y de la documentación pública; los tests usan respuestas simuladas.
+- Los clientes se verificaron contra las APIs reales el 2026-10-30 (búsqueda y código de barras de OFF, búsqueda de USDA); los tests usan respuestas simuladas con esas formas. El buscador clásico de OFF estaba caído ese día, así que su forma de respuesta no se pudo comprobar.
+
+## Alimentos argentinos (`ar_seed`)
+
+La fuente es la tabla **ARGENFOODS** de la Universidad Nacional de Luján. Ver [`argenfoods.md`](argenfoods.md): cómo se carga, qué cubre y las condiciones de uso.
