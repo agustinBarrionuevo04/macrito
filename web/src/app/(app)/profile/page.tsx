@@ -3,6 +3,11 @@ import { redirect } from 'next/navigation';
 import { signOut } from '@/app/(auth)/actions';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { KcalAdjustmentEditor } from '@/features/nutrients/components/kcal-adjustment-editor';
+import { MacroEditor } from '@/features/nutrients/components/macro-editor';
+import { WaterGoalEditor } from '@/features/water/components/water-goal-editor';
+import { suggestedWaterGoalMl } from '@/features/water/goal';
+import { getWaterGoalSetting } from '@/features/water/server';
 import { GoalSummary } from '@/features/profile/components/goal-summary';
 import { ProfileEditor } from '@/features/profile/components/profile-editor';
 import { WeightForm } from '@/features/profile/components/weight-form';
@@ -25,7 +30,10 @@ export default async function ProfilePage() {
   const { profile } = current;
 
   const today = todayInTimeZone(profile.timezone);
-  const weights = await getRecentWeights(current.userId);
+  const [weights, waterGoal] = await Promise.all([
+    getRecentWeights(current.userId),
+    getWaterGoalSetting(current.userId),
+  ]);
 
   // Los datos ya se validaron al guardarlos; si igual fallara el cálculo, el resto del perfil sigue usable.
   let breakdown = null;
@@ -92,6 +100,24 @@ export default async function ProfilePage() {
           {page.dataTitle}
         </h2>
         <ProfileEditor initial={initial} today={today} />
+      </section>
+
+      <section aria-labelledby="fine-title" className="flex flex-col gap-6">
+        <h2 id="fine-title" className="text-lg font-semibold">
+          {es.nutrients.fineTitle}
+        </h2>
+        <div className="flex flex-col gap-3">
+          <h3 className="font-medium">{es.nutrients.macros.title}</h3>
+          <MacroEditor profile={profile} today={today} />
+        </div>
+        <div className="flex flex-col gap-3">
+          <h3 className="font-medium">{es.nutrients.adjustment.title}</h3>
+          <KcalAdjustmentEditor profile={profile} today={today} />
+        </div>
+        <div className="flex flex-col gap-3">
+          <h3 className="font-medium">{es.water.goal.title}</h3>
+          <WaterGoalEditor saved={waterGoal} suggestedMl={suggestedWaterGoalMl(profile.weightKg)} />
+        </div>
       </section>
 
       <section aria-labelledby="appearance-title" className="flex flex-col gap-3">
