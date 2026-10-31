@@ -1,8 +1,11 @@
 import { createAnthropicProvider } from './anthropic';
+import { createGeminiProvider } from './gemini';
 import { AiError, type AiProvider } from './types';
 
 /** Modelo por defecto del proveedor Anthropic; se cambia con `AI_MODEL`. */
 export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-5-5';
+/** Modelo por defecto del proveedor Gemini; se cambia con `AI_MODEL`. */
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
 export const DEFAULT_DAILY_PHOTO_LIMIT = 20;
 export const DEFAULT_DAILY_TEXT_LIMIT = 100;
 
@@ -34,6 +37,12 @@ export function createProviderFromEnv(env: AiEnv): AiProvider {
       return createAnthropicProvider({
         apiKey,
         model: env.AI_MODEL?.trim() || DEFAULT_ANTHROPIC_MODEL,
+        ...(env.AI_BASE_URL?.trim() ? { baseUrl: env.AI_BASE_URL.trim() } : {}),
+      });
+    case 'gemini':
+      return createGeminiProvider({
+        apiKey,
+        model: env.AI_MODEL?.trim() || DEFAULT_GEMINI_MODEL,
         ...(env.AI_BASE_URL?.trim() ? { baseUrl: env.AI_BASE_URL.trim() } : {}),
       });
     default:
