@@ -1,6 +1,6 @@
 import { describeShape, extractJsonValue } from './extract';
-import { TOOL_DESCRIPTION, TOOL_NAME, TOOL_SCHEMA } from './schema';
-import { AiError, type AiAnalysis, type AiContent, type AiProvider } from './types';
+import { MEAL_TOOL } from './schema';
+import { AiError, type AiAnalysis, type AiContent, type AiProvider, type AiTool } from './types';
 
 const API_VERSION = '2023-06-01';
 const DEFAULT_BASE_URL = 'https://api.anthropic.com';
@@ -17,7 +17,7 @@ export type AnthropicOptions = {
   fetch?: typeof fetch;
 };
 
-function requestBody(model: string, content: AiContent, system: string) {
+function requestBody(model: string, content: AiContent, system: string, tool: AiTool) {
   // Anthropic recomienda la imagen antes del texto.
   const message =
     content.kind === 'photo'
@@ -34,9 +34,9 @@ function requestBody(model: string, content: AiContent, system: string) {
     model,
     max_tokens: MAX_TOKENS,
     system,
-    tools: [{ name: TOOL_NAME, description: TOOL_DESCRIPTION, input_schema: TOOL_SCHEMA }],
+    tools: [{ name: tool.name, description: tool.description, input_schema: tool.schema }],
     // Fuerza la llamada a la herramienta: la salida es siempre estructurada.
-    tool_choice: { type: 'tool', name: TOOL_NAME },
+    tool_choice: { type: 'tool', name: tool.name },
     messages: [{ role: 'user', content: message }],
   };
 }
@@ -78,7 +78,7 @@ export function createAnthropicProvider(options: AnthropicOptions): AiProvider {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   return {
-    async analyze(content, system, signal): Promise<AiAnalysis> {
+    async analyze(content, system, signal, tool = MEAL_TOOL): Promise<AiAnalysis> {
       const timeout = AbortSignal.timeout(timeoutMs);
       let response: Response;
       try {
@@ -89,7 +89,7 @@ export function createAnthropicProvider(options: AnthropicOptions): AiProvider {
             'x-api-key': options.apiKey,
             'anthropic-version': API_VERSION,
           },
-          body: JSON.stringify(requestBody(options.model, content, system)),
+          body: JSON.stringify(requestBody(options.model, content, system, tool)),
           signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
         });
       } catch (error) {
@@ -106,7 +106,7 @@ export function createAnthropicProvider(options: AnthropicOptions): AiProvider {
       } catch (error) {
         throw new AiError('bad_response', 'respuesta que no es JSON', { cause: error });
       }
-      return readResponse(body);
+      return readResponse(body, tool.name);
     },
   };
 }
@@ -118,7 +118,7 @@ type Block = { type?: string; name?: string; input?: unknown; text?: unknown };
  * modelo contestó con texto (o con otra herramienta) se busca el JSON ahí, para no tirar una
  * respuesta que ya se pagó. La forma de lo recibido se guarda en `diagnostics` (sin su contenido).
  */
-function readResponse(body: unknown): AiAnalysis {
+function readResponse(body: unknown, toolName: string): AiAnalysis {
   const record = (body ?? {}) as {
     content?: Block[];
     stop_reason?: unknown;
@@ -128,7 +128,7 @@ function readResponse(body: unknown): AiAnalysis {
   const stopReason = typeof record.stop_reason === 'string' ? record.stop_reason : 'desconocido';
 
   const call =
-    blocks.find((block) => block?.type === 'tool_use' && block.name === TOOL_NAME) ??
+    blocks.find((block) => block?.type === 'tool_use' && block.name === toolName) ??
     blocks.find((block) => block?.type === 'tool_use');
   const text = blocks
     .filter((block) => block?.type === 'text' && typeof block.text === 'string')
@@ -139,7 +139,7 @@ function readResponse(body: unknown): AiAnalysis {
   let source: string;
   if (call) {
     raw = call.input;
-    source = call.name === TOOL_NAME ? 'herramienta' : `herramienta ${String(call.name)}`;
+    source = call.name === toolName ? 'herramienta' : `herramienta ${String(call.name)}`;
   } else {
     raw = extractJsonValue(text);
     source = raw === undefined ? 'nada' : 'texto';

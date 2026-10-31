@@ -2,6 +2,9 @@
 export type AiContent =
   { kind: 'text'; text: string } | { kind: 'photo'; mediaType: 'image/jpeg'; base64: string };
 
+/** Herramienta que el modelo está obligado a llamar: su esquema fija la forma de la respuesta. */
+export type AiTool = { name: string; description: string; schema: object };
+
 export type AiUsage = { inputTokens: number; outputTokens: number };
 
 export type AiAnalysis = {
@@ -41,5 +44,11 @@ export class AiError extends Error {
  * cambia cómo se manda el pedido y cómo se lee la respuesta.
  */
 export type AiProvider = {
-  analyze(content: AiContent, system: string, signal?: AbortSignal): Promise<AiAnalysis>;
+  /** Sin `tool` se usa la de registrar comidas (`MEAL_TOOL`). */
+  analyze(
+    content: AiContent,
+    system: string,
+    signal?: AbortSignal,
+    tool?: AiTool,
+  ): Promise<AiAnalysis>;
 };

@@ -16,6 +16,8 @@ export type AiApiError =
   | 'ai_timeout'
   | 'ai_bad_response'
   | 'image_rejected'
+  /** El asistente de plan no pudo armar ninguna opción con alimentos de la base. */
+  | 'no_options'
   | 'internal';
 
 export function errorResponse(error: AiApiError, status: number, extra: object = {}) {

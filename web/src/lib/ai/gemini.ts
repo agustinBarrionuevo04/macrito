@@ -1,6 +1,6 @@
 import { describeShape, extractJsonValue } from './extract';
-import { TOOL_DESCRIPTION, TOOL_NAME, TOOL_SCHEMA } from './schema';
-import { AiError, type AiAnalysis, type AiContent, type AiProvider } from './types';
+import { MEAL_TOOL } from './schema';
+import { AiError, type AiAnalysis, type AiContent, type AiProvider, type AiTool } from './types';
 
 const DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com';
 const DEFAULT_TIMEOUT_MS = 25_000;
@@ -27,7 +27,7 @@ function toGeminiSchema(schema: unknown): unknown {
   );
 }
 
-function requestBody(content: AiContent, system: string) {
+function requestBody(content: AiContent, system: string, tool: AiTool) {
   const parts =
     content.kind === 'photo'
       ? [
@@ -43,15 +43,15 @@ function requestBody(content: AiContent, system: string) {
       {
         functionDeclarations: [
           {
-            name: TOOL_NAME,
-            description: TOOL_DESCRIPTION,
-            parameters: toGeminiSchema(TOOL_SCHEMA),
+            name: tool.name,
+            description: tool.description,
+            parameters: toGeminiSchema(tool.schema),
           },
         ],
       },
     ],
     // Fuerza la llamada a la función: la salida es siempre estructurada.
-    toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: [TOOL_NAME] } },
+    toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: [tool.name] } },
     generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
   };
 }
@@ -95,14 +95,14 @@ export function createGeminiProvider(options: GeminiOptions): AiProvider {
   const url = `${baseUrl}/v1beta/models/${encodeURIComponent(options.model)}:generateContent`;
 
   return {
-    async analyze(content, system, signal): Promise<AiAnalysis> {
+    async analyze(content, system, signal, tool = MEAL_TOOL): Promise<AiAnalysis> {
       const timeout = AbortSignal.timeout(timeoutMs);
       let response: Response;
       try {
         response = await doFetch(url, {
           method: 'POST',
           headers: { 'content-type': 'application/json', 'x-goog-api-key': options.apiKey },
-          body: JSON.stringify(requestBody(content, system)),
+          body: JSON.stringify(requestBody(content, system, tool)),
           signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
         });
       } catch (error) {
@@ -119,7 +119,7 @@ export function createGeminiProvider(options: GeminiOptions): AiProvider {
       } catch (error) {
         throw new AiError('bad_response', 'respuesta que no es JSON', { cause: error });
       }
-      return readResponse(body);
+      return readResponse(body, tool.name);
     },
   };
 }
@@ -130,7 +130,7 @@ type Part = { text?: unknown; functionCall?: { name?: unknown; args?: unknown } 
  * Saca de la respuesta lo que devolvió el modelo. Lo normal es la llamada a la función; si
  * contestó con texto se busca el JSON ahí. La forma de lo recibido se guarda en `diagnostics`.
  */
-function readResponse(body: unknown): AiAnalysis {
+function readResponse(body: unknown, toolName: string): AiAnalysis {
   const record = (body ?? {}) as {
     candidates?: { content?: { parts?: Part[] }; finishReason?: unknown }[];
     promptFeedback?: { blockReason?: unknown };
@@ -146,7 +146,7 @@ function readResponse(body: unknown): AiAnalysis {
       : '';
 
   const call =
-    parts.find((part) => part?.functionCall?.name === TOOL_NAME) ??
+    parts.find((part) => part?.functionCall?.name === toolName) ??
     parts.find((part) => part?.functionCall);
   const text = parts
     .filter((part) => typeof part?.text === 'string')
@@ -158,7 +158,7 @@ function readResponse(body: unknown): AiAnalysis {
   if (call?.functionCall) {
     raw = call.functionCall.args;
     source =
-      call.functionCall.name === TOOL_NAME
+      call.functionCall.name === toolName
         ? 'herramienta'
         : `herramienta ${String(call.functionCall.name)}`;
   } else {
