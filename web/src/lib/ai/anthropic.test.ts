@@ -194,6 +194,24 @@ describe('createAnthropicProvider', () => {
     expect((second as Error).message).toBe('HTTP 500');
   });
 
+  it('un 400 por saldo agotado es "unavailable", también con foto', async () => {
+    const noCredit = () =>
+      new Response(
+        JSON.stringify({
+          type: 'error',
+          error: {
+            type: 'invalid_request_error',
+            message: 'Your credit balance is too low to access the Anthropic API.',
+          },
+        }),
+        { status: 400 },
+      );
+    for (const content of [TEXT, PHOTO]) {
+      const { provider } = make(noCredit);
+      expect(await codeOf(provider.analyze(content, 's')), content.kind).toBe('unavailable');
+    }
+  });
+
   it('un fallo de red es "unavailable"', async () => {
     const { provider } = make(() => Promise.reject(new TypeError('fetch failed')));
     expect(await codeOf(provider.analyze(TEXT, 's'))).toBe('unavailable');
