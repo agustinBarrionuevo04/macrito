@@ -6,6 +6,10 @@ import { DiarySkeleton } from '@/features/diary/components/diary-skeleton';
 import { DiaryView } from '@/features/diary/components/diary-view';
 import { resolveDay } from '@/features/diary/dates';
 import { getDayEntries } from '@/features/diary/server';
+import { MicroPanel } from '@/features/nutrients/components/micro-panel';
+import { getMicroTotals } from '@/features/nutrients/server';
+import { WaterCard } from '@/features/water/components/water-card';
+import { getWaterDay } from '@/features/water/server';
 import { getCurrentProfile } from '@/features/profile/server';
 import { es } from '@/lib/i18n/es';
 import { NutritionInputError, computeTargets, todayInTimeZone } from '@/lib/nutrition';
@@ -28,13 +32,19 @@ async function DayContent({
   day,
   today,
   targets,
+  weightKg,
 }: {
   userId: string;
   day: string;
   today: string;
   targets: DailyTargets | null;
+  weightKg: number;
 }) {
-  const entries = await getDayEntries(userId, day);
+  const [entries, micro, water] = await Promise.all([
+    getDayEntries(userId, day),
+    getMicroTotals(day),
+    getWaterDay(userId, day, weightKg),
+  ]);
   if (!entries) {
     return (
       <p role="alert" className="text-danger">
@@ -42,7 +52,20 @@ async function DayContent({
       </p>
     );
   }
-  return <DiaryView day={day} today={today} entries={entries} targets={targets} />;
+  return (
+    <DiaryView
+      day={day}
+      today={today}
+      entries={entries}
+      targets={targets}
+      extras={
+        <>
+          {water ? <WaterCard day={day} {...water} /> : null}
+          {micro ? <MicroPanel totals={micro} targetKcal={targets?.kcal ?? null} /> : null}
+        </>
+      }
+    />
+  );
 }
 
 export default async function TodayPage({ searchParams }: PageProps<'/'>) {
@@ -62,6 +85,7 @@ export default async function TodayPage({ searchParams }: PageProps<'/'>) {
           day={day}
           today={today}
           targets={targetsOf(current.profile, today)}
+          weightKg={current.profile.weightKg}
         />
       </Suspense>
     </DayPager>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { es } from '@/lib/i18n/es';
 import type { DailyTargets, MealType } from '@/types';
@@ -20,10 +20,12 @@ type Props = {
   today: string;
   entries: DiaryEntry[];
   targets: DailyTargets | null;
+  /** Bloques que se muestran justo debajo del resumen (agua, fibra/azúcares/sodio). */
+  extras?: ReactNode;
 };
 
 /** Contenido de la pantalla Hoy: resumen, comidas y las hojas de edición, copia y calorías rápidas. */
-export function DiaryView({ day, today, entries, targets }: Props) {
+export function DiaryView({ day, today, entries, targets, extras }: Props) {
   const [editing, setEditing] = useState<DiaryEntry | null>(null);
   const [copySource, setCopySource] = useState<CopySource | null>(null);
   // La comida sugerida depende de la hora del dispositivo: se calcula al abrir, no al renderizar
@@ -42,6 +44,8 @@ export function DiaryView({ day, today, entries, targets }: Props) {
   return (
     <>
       <DaySummary totals={totals} targets={targets} />
+
+      {extras}
 
       {entries.length === 0 ? (
         <div className="bg-surface-muted flex flex-col items-center gap-2 rounded-2xl p-6 text-center">
