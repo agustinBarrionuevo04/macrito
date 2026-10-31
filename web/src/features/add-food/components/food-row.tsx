@@ -9,7 +9,8 @@ type Props = {
   food: Food;
   favorite: boolean;
   onSelect: (food: Food) => void;
-  onToggleFavorite: (food: Food) => void;
+  /** Sin esta función no se muestra la estrella (por ejemplo, al elegir un ingrediente). */
+  onToggleFavorite?: (food: Food) => void;
 };
 
 function Star({ filled }: { filled: boolean }) {
@@ -55,15 +56,17 @@ export function FoodRow({ food, favorite, onSelect, onToggleFavorite }: Props) {
           {t(m.per100, { kcal: formatNumber(food.per100g.kcal, 0) })}
         </span>
       </button>
-      <button
-        type="button"
-        aria-pressed={favorite}
-        aria-label={t(favorite ? m.favoriteRemove : m.favoriteAdd, { name: food.name })}
-        onClick={() => onToggleFavorite(food)}
-        className={`inline-flex size-11 shrink-0 items-center justify-center rounded-lg ${favorite ? 'text-carbs' : 'text-muted'}`}
-      >
-        <Star filled={favorite} />
-      </button>
+      {onToggleFavorite ? (
+        <button
+          type="button"
+          aria-pressed={favorite}
+          aria-label={t(favorite ? m.favoriteRemove : m.favoriteAdd, { name: food.name })}
+          onClick={() => onToggleFavorite(food)}
+          className={`inline-flex size-11 shrink-0 items-center justify-center rounded-lg ${favorite ? 'text-carbs' : 'text-muted'}`}
+        >
+          <Star filled={favorite} />
+        </button>
+      ) : null}
     </li>
   );
 }

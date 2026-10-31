@@ -35,6 +35,11 @@ export type FakeSupabaseOptions = {
   tables: Record<string, FakeTable>;
   /** Devuelve un error para simular que falla una consulta concreta. */
   failWhen?: (call: RecordedCall) => string | null;
+  /** Funciones `rpc` simuladas por nombre. Cada una recibe los argumentos y devuelve `{ data, error }`. */
+  rpc?: Record<
+    string,
+    (args: Row) => { data: unknown; error?: { message: string; code?: string } | null }
+  >;
 };
 
 type Result = { data: unknown; error: { message: string; code?: string } | null };
@@ -63,6 +68,7 @@ export function createFakeSupabase(options: FakeSupabaseOptions) {
   for (const [name, table] of Object.entries(options.tables))
     tables[name] = [...(table.rows ?? [])];
   const calls: RecordedCall[] = [];
+  const rpcCalls: { name: string; args: Row }[] = [];
 
   const owner = (table: string) => options.tables[table]?.ownerColumn;
   const visible = (table: string, row: Row) => {
@@ -259,7 +265,14 @@ export function createFakeSupabase(options: FakeSupabaseOptions) {
       }),
     },
     from,
+    rpc: async (name: string, args: Row = {}) => {
+      rpcCalls.push({ name, args });
+      const handler = options.rpc?.[name];
+      if (!handler) return { data: null, error: { message: `rpc desconocida: ${name}` } };
+      const result = handler(args);
+      return { data: result.data, error: result.error ?? null };
+    },
   };
 
-  return { client, calls, rows: (table: string) => tables[table] ?? [] };
+  return { client, calls, rpcCalls, rows: (table: string) => tables[table] ?? [] };
 }

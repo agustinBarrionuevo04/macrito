@@ -76,6 +76,14 @@ export async function addEntry(
   if (!foodParsed.success) return fail(e.generic);
   const food = rowToCatalogFood(foodParsed.data);
 
+  // Si el alimento es el de una receta, la entrada es de origen `recipe` (el cliente no lo sabe: se resuelve acá).
+  const { data: recipeRow } = await supabase
+    .from('recipes')
+    .select('id')
+    .eq('food_id', food.id)
+    .maybeSingle();
+  const origin = recipeRow ? 'recipe' : input.origin;
+
   const { data, error } = await supabase
     .from('intake_entries')
     .insert({
@@ -86,7 +94,7 @@ export async function addEntry(
       name: food.brand ? `${food.name} (${food.brand})` : food.name,
       quantity_g: input.quantity_g,
       ...nutritionColumns(snapshotFromPer100g(food.per100g, input.quantity_g)),
-      origin: input.origin,
+      origin,
       is_estimate: input.is_estimate,
     })
     .select('id')
