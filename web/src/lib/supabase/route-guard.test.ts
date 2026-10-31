@@ -21,6 +21,7 @@ describe('resolveRoute sin sesión', () => {
     '/reset-password',
     '/auth/callback',
     '/offline',
+    '/api/cron/reminders',
   ])('%s es accesible', (pathname) => {
     expect(resolveRoute({ pathname, hasSession: false, onboardingCompleted: null })).toEqual(next);
   });
@@ -38,6 +39,10 @@ describe('resolveRoute sin sesión', () => {
     expect(
       resolveRoute({ pathname: '/apiary', hasSession: false, onboardingCompleted: null }),
     ).toEqual(redirect('/login'));
+    // Solo /api/cron es abierto; el resto de /api sigue pidiendo sesión.
+    expect(
+      resolveRoute({ pathname: '/api/cronx', hasSession: false, onboardingCompleted: null }),
+    ).toEqual({ action: 'unauthorized' });
   });
 });
 

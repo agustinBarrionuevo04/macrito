@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { KcalAdjustmentEditor } from '@/features/nutrients/components/kcal-adjustment-editor';
 import { MacroEditor } from '@/features/nutrients/components/macro-editor';
+import { ReminderSettings } from '@/features/reminders/components/reminder-settings';
+import { getReminderSettings } from '@/features/reminders/server';
 import { WaterGoalEditor } from '@/features/water/components/water-goal-editor';
 import { suggestedWaterGoalMl } from '@/features/water/goal';
 import { getWaterGoalSetting } from '@/features/water/server';
@@ -30,10 +32,13 @@ export default async function ProfilePage() {
   const { profile } = current;
 
   const today = todayInTimeZone(profile.timezone);
-  const [weights, waterGoal] = await Promise.all([
+  const [weights, waterGoal, reminders] = await Promise.all([
     getRecentWeights(current.userId),
     getWaterGoalSetting(current.userId),
+    getReminderSettings(current.userId),
   ]);
+  // La clave pública VAPID se lee en el servidor (en tiempo de ejecución) y se le pasa al cliente: no hace falta recompilar.
+  const vapidPublicKey = process.env.VAPID_PUBLIC_KEY?.trim() || null;
 
   // Los datos ya se validaron al guardarlos; si igual fallara el cálculo, el resto del perfil sigue usable.
   let breakdown = null;
@@ -119,6 +124,15 @@ export default async function ProfilePage() {
           <WaterGoalEditor saved={waterGoal} suggestedMl={suggestedWaterGoalMl(profile.weightKg)} />
         </div>
       </section>
+
+      {reminders ? (
+        <section aria-labelledby="reminders-title" className="flex flex-col gap-3">
+          <h2 id="reminders-title" className="text-lg font-semibold">
+            {es.reminders.title}
+          </h2>
+          <ReminderSettings vapidPublicKey={vapidPublicKey} initial={reminders} />
+        </section>
+      ) : null}
 
       <section aria-labelledby="appearance-title" className="flex flex-col gap-3">
         <h2 id="appearance-title" className="text-lg font-semibold">

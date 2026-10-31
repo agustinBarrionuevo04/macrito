@@ -14,10 +14,11 @@ export type RouteGuardResult =
 const GUEST_ONLY = ['/login', '/register', '/forgot-password'];
 
 /**
- * Rutas accesibles con o sin sesión: el link de recuperación crea una sesión temporal y la página
- * offline la sirve el service worker sin saber si hay sesión.
+ * Rutas accesibles con o sin sesión: el link de recuperación crea una sesión temporal, la página
+ * offline la sirve el service worker sin saber si hay sesión, y `/api/cron` lo llama una tarea
+ * programada sin usuario (cada endpoint se autentica con su propio secreto).
  */
-const OPEN = ['/auth', '/reset-password', '/offline'];
+const OPEN = ['/auth', '/reset-password', '/offline', '/api/cron'];
 
 function matches(pathname: string, base: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`);

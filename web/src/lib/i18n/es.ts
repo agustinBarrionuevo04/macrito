@@ -807,6 +807,52 @@ export const es = {
       generic: 'No pudimos completar la acción. Probá de nuevo.',
     },
   },
+  reminders: {
+    title: 'Recordatorios',
+    help: 'Te avisamos a la hora que elijas para que no te olvides de cargar lo que comés. No avisamos si esa comida ya la cargaste.',
+    device: {
+      enable: 'Activar avisos en este dispositivo',
+      enabled: 'Los avisos están activados en este dispositivo.',
+      disable: 'Desactivar en este dispositivo',
+      working: 'Activando…',
+      test: 'Enviar una prueba',
+      testing: 'Enviando…',
+      testSent: 'Prueba enviada',
+    },
+    meals: 'Avisar en cada comida',
+    switchLabel: 'Avisar en {meal}',
+    timeLabel: 'Hora del aviso de {meal}',
+    states: {
+      'not-configured': 'Los avisos todavía no están disponibles en esta instalación.',
+      'ios-install':
+        'En iPhone y iPad los avisos solo funcionan con la app instalada: tocá Compartir → Añadir a pantalla de inicio, abrí Macritos desde ahí y volvé a esta pantalla.',
+      unsupported:
+        'Este navegador no permite avisos. Probá con Chrome, Edge, Firefox o Safari actualizado.',
+      denied:
+        'Bloqueaste las notificaciones de este sitio. Para activarlas, permitilas desde la configuración del navegador y volvé a intentar.',
+    },
+    push: {
+      titles: {
+        breakfast: 'Hora del desayuno',
+        lunch: 'Hora del almuerzo',
+        snack: 'Hora de la merienda',
+        dinner: 'Hora de la cena',
+      },
+      body: '¿Ya cargaste lo que comiste? Tocá para agregarlo.',
+      testTitle: 'Prueba de Macritos',
+      testBody: 'Si ves esto, los avisos funcionan en este dispositivo.',
+    },
+    errors: {
+      time: 'Elegí una hora válida (por ejemplo, 13:00).',
+      subscription: 'No pudimos activar los avisos en este dispositivo. Probá de nuevo.',
+      noDevice: 'Primero activá los avisos en este dispositivo.',
+      notConfigured: 'Los avisos todavía no están disponibles en esta instalación.',
+      testFailed: 'No pudimos entregar la prueba. Probá desactivar y volver a activar los avisos.',
+      permission: 'No diste permiso para mostrar notificaciones.',
+      generic: 'No pudimos guardar el aviso. Probá de nuevo.',
+      sessionExpired: 'Tu sesión venció. Volvé a ingresar.',
+    },
+  },
   water: {
     title: 'Agua',
     progress: '{total} de {goal} ml',
