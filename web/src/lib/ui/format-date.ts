@@ -6,3 +6,9 @@ export function formatIsoDate(iso: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
   return match ? `${match[3]}/${match[2]}/${match[1]}` : iso;
 }
+
+/** `2026-03-15` → `15/3`. Sin año, para ejes de gráficos. */
+export function formatShortDate(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return match ? `${Number(match[3])}/${Number(match[2])}` : iso;
+}
