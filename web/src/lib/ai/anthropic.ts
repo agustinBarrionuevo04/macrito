@@ -62,6 +62,8 @@ async function errorForStatus(response: Response, content: AiContent): Promise<A
   if (status === 429) return new AiError('rate_limited', message);
   if (status === 413) return new AiError('image_rejected', message);
   if (status === 400) {
+    // Sin saldo la API contesta 400: no es un problema del pedido ni de la imagen.
+    if (/credit balance/i.test(detail)) return new AiError('unavailable', message);
     return content.kind === 'photo'
       ? new AiError('image_rejected', message)
       : new AiError('bad_response', message);

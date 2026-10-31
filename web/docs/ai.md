@@ -59,7 +59,8 @@ Errores `{ "error": code }`: `unauthorized` 401 · `invalid_request` 400 · `too
 - El navegador la reduce a ~1024 px (JPEG, calidad 0,8) antes de subirla; redibujarla en un canvas ya descarta el EXIF.
 - **El servidor quita los metadatos de todos modos** (`stripJpegMetadata`): EXIF/GPS, XMP, comentarios e ICC. Se mira el
   contenido (firma JPEG), no el tipo que declara el cliente. Solo se aceptan JPEG.
-- A Anthropic le llega la imagen sin metadatos. Ver sus condiciones de retención de datos antes de abrir la app a más gente.
+- Al proveedor le llega la imagen sin metadatos. Ver sus condiciones de retención de datos antes de abrir la app a más gente.
+  En el plan gratuito de Gemini, Google puede usar lo que se envía para mejorar sus productos: no usarlo con fotos de terceros sin que lo sepan.
 
 ## Límites y costo
 
@@ -76,11 +77,19 @@ Errores `{ "error": code }`: `unauthorized` 401 · `invalid_request` 400 · `too
 
 ## Proveedor
 
-Interfaz `AiProvider.analyze(content, system)` (`src/lib/ai/types.ts`). Hoy solo Anthropic (`anthropic.ts`): Messages API
-con salida forzada por herramienta (`tool_choice`), imagen antes del texto, timeout de 25 s. Agregar otro proveedor no
-toca el esquema ni los prompts: se agrega un `case` en `config.ts`.
+Interfaz `AiProvider.analyze(content, system)` (`src/lib/ai/types.ts`). Hay dos proveedores, elegidos con `AI_PROVIDER`:
 
-Variables (solo servidor): `AI_PROVIDER`, `AI_MODEL` (por defecto `claude-sonnet-5-5`), `AI_API_KEY`, `AI_BASE_URL`
+- `anthropic` (`anthropic.ts`, por defecto): Messages API con salida forzada por herramienta (`tool_choice`), imagen
+  antes del texto, timeout de 25 s. Un 400 por saldo agotado (`credit balance is too low`) cuenta como `unavailable`
+  (503), no como respuesta inválida: la API se factura aparte de cualquier plan de Claude Code o claude.ai.
+- `gemini` (`gemini.ts`): `generateContent` con la función forzada (`functionCallingConfig.mode = ANY`). El esquema se
+  manda sin `additionalProperties`. Una clave inválida (400 `API key not valid`) es `unauthorized` y una región sin
+  acceso (`FAILED_PRECONDITION`) es `unavailable`. Tiene plan gratuito con límites por minuto y por día que cambian:
+  ver ai.google.dev/gemini-api/docs/rate-limits.
+
+Agregar otro proveedor no toca el esquema ni los prompts: se agrega un `case` en `config.ts`.
+
+Variables (solo servidor): `AI_PROVIDER`, `AI_MODEL` (por defecto `claude-sonnet-5-5`, o `gemini-3.5-flash-lite` con Gemini), `AI_API_KEY`, `AI_BASE_URL`
 (pruebas o proxy), `AI_DAILY_PHOTO_LIMIT`, `AI_DAILY_TEXT_LIMIT`. Sin `AI_API_KEY` el endpoint responde `ai_not_configured`.
 
 ## Prompts

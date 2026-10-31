@@ -45,4 +45,10 @@ describe('createProviderFromEnv', () => {
     expect(codeOf({ AI_API_KEY: 'k' })).toBeNull();
     expect(codeOf({ AI_PROVIDER: 'Anthropic', AI_API_KEY: 'k', AI_MODEL: 'x' })).toBeNull();
   });
+
+  it('gemini necesita clave y acepta modelo propio', () => {
+    expect(codeOf({ AI_PROVIDER: 'gemini' })).toBe('not_configured');
+    expect(codeOf({ AI_PROVIDER: 'Gemini', AI_API_KEY: 'k' })).toBeNull();
+    expect(codeOf({ AI_PROVIDER: 'gemini', AI_API_KEY: 'k', AI_MODEL: 'x' })).toBeNull();
+  });
 });
