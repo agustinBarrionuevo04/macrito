@@ -5,6 +5,8 @@ import { useCallback, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { AiAnalyzer } from '@/features/ai-photo/components/ai-analyzer';
+import { QuickPanel, type RepeatInfo } from '@/features/recipes/components/quick-panel';
+import type { RecipeSummary } from '@/features/recipes/types';
 import { addEntry } from '@/features/diary/actions';
 import { defaultMealFor } from '@/features/diary/meal';
 import { es } from '@/lib/i18n/es';
@@ -36,6 +38,9 @@ type Props = {
   favoriteIds: string[];
   favorites: Food[];
   recents: Food[];
+  /** Comidas frecuentes y qué se puede repetir de ayer y de la semana pasada. */
+  combos?: RecipeSummary[];
+  repeat?: RepeatInfo | null;
 };
 
 type Selection = { food: Food; origin: Origin; meal: MealType };
@@ -55,7 +60,16 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 /** Pantalla de agregar: buscar, escanear o crear un alimento; después elegir cuánto y a qué comida. */
-export function AddFoodView({ day, today, initialMeal, favoriteIds, favorites, recents }: Props) {
+export function AddFoodView({
+  day,
+  today,
+  initialMeal,
+  favoriteIds,
+  favorites,
+  recents,
+  combos = [],
+  repeat = null,
+}: Props) {
   const router = useRouter();
   const toast = useToast();
   const [tab, setTab] = useState<Tab>('search');
@@ -176,14 +190,23 @@ export function AddFoodView({ day, today, initialMeal, favoriteIds, favorites, r
 
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'search' ? (
-          <FoodPicker
-            onSelect={(food) => choose(food, 'search')}
-            favoriteIds={favIds}
-            onToggleFavorite={toggleFavorite}
-            favorites={favFoods}
-            recents={recents.filter((food) => !favIds.has(food.id))}
-            onCreate={(name) => setForm({ kind: 'create', values: emptyValues({ name }) })}
-          />
+          <div className="flex flex-col gap-4">
+            <QuickPanel
+              day={day}
+              initialMeal={initialMeal}
+              combos={combos}
+              repeat={repeat}
+              onViewDiary={viewDiary}
+            />
+            <FoodPicker
+              onSelect={(food) => choose(food, 'search')}
+              favoriteIds={favIds}
+              onToggleFavorite={toggleFavorite}
+              favorites={favFoods}
+              recents={recents.filter((food) => !favIds.has(food.id))}
+              onCreate={(name) => setForm({ kind: 'create', values: emptyValues({ name }) })}
+            />
+          </div>
         ) : null}
 
         {tab === 'scan' ? (

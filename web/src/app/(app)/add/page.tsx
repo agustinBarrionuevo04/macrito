@@ -4,6 +4,7 @@ import { dayLabel, resolveDay } from '@/features/diary/dates';
 import { isMealType } from '@/features/diary/meal';
 import { AddFoodView } from '@/features/add-food/components/add-food-view';
 import { getStartingFoods } from '@/features/add-food/server';
+import { getRecipeList, getRepeatCounts } from '@/features/recipes/server';
 import { getCurrentProfile } from '@/features/profile/server';
 import { es } from '@/lib/i18n/es';
 import { t } from '@/lib/i18n/format';
@@ -26,7 +27,11 @@ export default async function AddFoodPage({ searchParams }: PageProps<'/add'>) {
 
   const label = dayLabel(day, today);
   const dayText = label.kind === 'date' ? label.text : es.diary.day[label.kind];
-  const starting = await getStartingFoods(current.userId);
+  const [starting, recipes, repeat] = await Promise.all([
+    getStartingFoods(current.userId),
+    getRecipeList(current.userId),
+    getRepeatCounts(current.userId, day),
+  ]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -44,6 +49,8 @@ export default async function AddFoodPage({ searchParams }: PageProps<'/add'>) {
         favoriteIds={starting.favoriteIds}
         favorites={starting.favorites}
         recents={starting.recents}
+        combos={(recipes ?? []).filter((recipe) => recipe.kind === 'combo')}
+        repeat={repeat}
       />
     </div>
   );

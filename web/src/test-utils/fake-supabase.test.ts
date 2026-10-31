@@ -134,3 +134,28 @@ describe('fake supabase', () => {
     expect((await anonymous.client.from('x').select('*')).error?.message).toContain('desconocida');
   });
 });
+
+describe('fake supabase: rpc', () => {
+  it('ejecuta la función simulada, registra la llamada y devuelve su resultado', async () => {
+    const { client, rpcCalls } = createFakeSupabase({
+      userId: ME,
+      tables: {},
+      rpc: { sumar: (args) => ({ data: Number(args.a) + Number(args.b) }) },
+    });
+    expect(await client.rpc('sumar', { a: 1, b: 2 })).toEqual({ data: 3, error: null });
+    expect(rpcCalls).toEqual([{ name: 'sumar', args: { a: 1, b: 2 } }]);
+  });
+
+  it('una función que falla devuelve su error; una desconocida también', async () => {
+    const { client } = createFakeSupabase({
+      userId: ME,
+      tables: {},
+      rpc: { rota: () => ({ data: null, error: { message: 'boom', code: 'P0002' } }) },
+    });
+    expect(await client.rpc('rota')).toEqual({
+      data: null,
+      error: { message: 'boom', code: 'P0002' },
+    });
+    expect((await client.rpc('nada')).error?.message).toContain('desconocida');
+  });
+});

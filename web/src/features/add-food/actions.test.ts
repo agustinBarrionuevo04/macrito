@@ -148,6 +148,25 @@ describe('updateCustomFood', () => {
   });
 });
 
+describe('updateCustomFood: alimentos de una receta', () => {
+  it('no deja editar a mano el alimento de una receta (se desincronizaría de sus ingredientes)', async () => {
+    const fake = createFakeSupabase({
+      userId: ME,
+      tables: {
+        foods: { rows: [foodRow(MINE)] },
+        favorite_foods: { ownerColumn: 'user_id', rows: [] },
+        recipes: { ownerColumn: 'user_id', rows: [{ id: 'r1', user_id: ME, food_id: MINE }] },
+      },
+    });
+    h.client = { from: fake.client.from.bind(fake.client), auth: fake.client.auth };
+    expect(await updateCustomFood(MINE, { ...input, name: 'Otro nombre' })).toEqual({
+      ok: false,
+      error: expect.stringContaining('receta'),
+    });
+    expect(fake.rows('foods')[0]).toMatchObject({ name: 'Alfajor' });
+  });
+});
+
 describe('setFavorite', () => {
   it('agrega y quita favoritos, de forma idempotente', async () => {
     const fake = setup();

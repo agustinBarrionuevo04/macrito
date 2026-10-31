@@ -15,10 +15,11 @@ type Props = {
   day: string;
   onOpen: (entry: DiaryEntry) => void;
   onCopy: (meal: MealType) => void;
+  onSaveCombo?: (meal: MealType) => void;
 };
 
 /** Una comida del día: título con sus calorías, entradas y botones para agregar o copiar. */
-export function MealSection({ meal, entries, day, onOpen, onCopy }: Props) {
+export function MealSection({ meal, entries, day, onOpen, onCopy, onSaveCombo }: Props) {
   const name = es.diary.meals[meal];
   const kcal = sumSnapshots(entries).kcal;
 
@@ -57,6 +58,15 @@ export function MealSection({ meal, entries, day, onOpen, onCopy }: Props) {
             className="text-muted inline-flex min-h-11 items-center px-2 text-sm"
           >
             {t(m.copy, { meal: name.toLowerCase() })}
+          </button>
+        ) : null}
+        {entries.length > 0 && onSaveCombo ? (
+          <button
+            type="button"
+            onClick={() => onSaveCombo(meal)}
+            className="text-muted inline-flex min-h-11 items-center px-2 text-sm"
+          >
+            {es.recipes.repeat.saveShort}
           </button>
         ) : null}
       </div>

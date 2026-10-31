@@ -13,6 +13,7 @@ import { DaySummary } from './day-summary';
 import { EntrySheet } from './entry-sheet';
 import { MealSection } from './meal-section';
 import { QuickAddSheet } from './quick-add-sheet';
+import { SaveComboSheet } from '@/features/recipes/components/save-combo-sheet';
 
 type Props = {
   day: string;
@@ -27,6 +28,7 @@ export function DiaryView({ day, today, entries, targets }: Props) {
   const [copySource, setCopySource] = useState<CopySource | null>(null);
   // La comida sugerida depende de la hora del dispositivo: se calcula al abrir, no al renderizar
   // (en el servidor sería otra hora y la hidratación no coincidiría).
+  const [comboMeal, setComboMeal] = useState<MealType | null>(null);
   const [quick, setQuick] = useState<{ meal: MealType; session: number } | null>(null);
   const quickSessions = useRef(0);
 
@@ -63,6 +65,7 @@ export function DiaryView({ day, today, entries, targets }: Props) {
             day={day}
             onOpen={setEditing}
             onCopy={copyMeal}
+            onSaveCombo={setComboMeal}
           />
         ))}
       </div>
@@ -102,6 +105,7 @@ export function DiaryView({ day, today, entries, targets }: Props) {
         day={day}
         today={today}
       />
+      <SaveComboSheet meal={comboMeal} day={day} onClose={() => setComboMeal(null)} />
       <QuickAddSheet
         key={`${day}:${quick?.session ?? 0}`}
         open={quick !== null}

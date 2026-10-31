@@ -177,6 +177,32 @@ describe('addEntry', () => {
   });
 });
 
+describe('addEntry: alimentos de una receta', () => {
+  it('si el alimento es el de una receta, la entrada es de origen "recipe" aunque el cliente diga otra cosa', async () => {
+    const fake = setup({
+      tables: {
+        foods: { rows: [milk] },
+        intake_entries: { ownerColumn: 'user_id', rows: [] },
+        recipes: { ownerColumn: 'user_id', rows: [{ id: 'r1', user_id: ME, food_id: MILK }] },
+      },
+    });
+    expect((await addEntry(draft({ origin: 'search' }), DAY)).ok).toBe(true);
+    expect(fake.rows('intake_entries')[0]).toMatchObject({ origin: 'recipe' });
+  });
+
+  it('un alimento común conserva el origen que mandó el cliente', async () => {
+    const fake = setup({
+      tables: {
+        foods: { rows: [milk] },
+        intake_entries: { ownerColumn: 'user_id', rows: [] },
+        recipes: { ownerColumn: 'user_id', rows: [{ id: 'r1', user_id: ME, food_id: 'otro' }] },
+      },
+    });
+    await addEntry(draft({ origin: 'barcode' }), DAY);
+    expect(fake.rows('intake_entries')[0]).toMatchObject({ origin: 'barcode' });
+  });
+});
+
 describe('addQuickEntry', () => {
   it('guarda un valor manual sin alimento ni cantidad', async () => {
     const fake = setup();

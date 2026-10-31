@@ -93,6 +93,14 @@ export async function updateCustomFood(id: unknown, raw: unknown): Promise<Resul
   if (!current) return fail(e.notFound);
   if ((current as { created_by: unknown }).created_by !== userId) return fail(e.notOwn);
 
+  // El alimento de una receta se calcula desde sus ingredientes: editarlo a mano lo desincronizaría.
+  const { data: recipe } = await supabase
+    .from('recipes')
+    .select('id')
+    .eq('food_id', parsedId.data)
+    .maybeSingle();
+  if (recipe) return fail(es.recipes.errors.isRecipeFood);
+
   const { data, error } = await supabase
     .from('foods')
     .update(columnsFromInput(parsed.data))

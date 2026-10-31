@@ -18,12 +18,12 @@ const MIN_QUERY = 2;
 type Props = {
   onSelect: (food: Food) => void;
   favoriteIds: ReadonlySet<string>;
-  onToggleFavorite: (food: Food) => void;
+  onToggleFavorite?: (food: Food) => void;
   /** Lo que se muestra antes de escribir. */
   favorites: Food[];
   recents: Food[];
-  /** Crear un alimento propio, con lo escrito como nombre. */
-  onCreate: (name: string) => void;
+  /** Crear un alimento propio, con lo escrito como nombre. Sin esta función no se ofrece. */
+  onCreate?: (name: string) => void;
 };
 
 type Status =
@@ -135,9 +135,11 @@ export function FoodPicker({
       <div className="flex flex-col items-start gap-2">
         <p className="font-medium">{t(s.noResults, { query: trimmed })}</p>
         <p className="text-muted text-sm">{s.noResultsHelp}</p>
-        <Button variant="secondary" onClick={() => onCreate(trimmed)}>
-          {t(s.createFromQuery, { query: trimmed })}
-        </Button>
+        {onCreate ? (
+          <Button variant="secondary" onClick={() => onCreate(trimmed)}>
+            {t(s.createFromQuery, { query: trimmed })}
+          </Button>
+        ) : null}
       </div>
     );
   } else {
