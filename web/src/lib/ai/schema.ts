@@ -1,7 +1,7 @@
 import type { Confidence, PhotoItem } from '@/types';
 import { isPlausible, toNumber } from '@/lib/foods/nutrition-check';
 import { extractJsonValue } from './extract';
-import { AiError } from './types';
+import { AiError, type AiTool } from './types';
 import { AI_UNITS, isAiUnit, toGrams } from './units';
 
 export const TOOL_NAME = 'log_meal_items';
@@ -65,6 +65,13 @@ export const TOOL_SCHEMA = {
   required: ['items'],
   additionalProperties: false,
 } as const;
+
+/** Herramienta por defecto de los proveedores: identificar los alimentos de una foto o un texto. */
+export const MEAL_TOOL: AiTool = {
+  name: TOOL_NAME,
+  description: TOOL_DESCRIPTION,
+  schema: TOOL_SCHEMA,
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);

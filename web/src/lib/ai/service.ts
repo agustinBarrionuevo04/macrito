@@ -1,7 +1,6 @@
-import type { PhotoItem } from '@/types';
 import { parseModelItems } from './schema';
 import { PHOTO_SYSTEM, TEXT_SYSTEM } from './prompts';
-import { AiError, type AiProvider, type AiUsage } from './types';
+import { AiError, type AiProvider, type AiTool, type AiUsage } from './types';
 import type { UsageKind, UsageTracker } from './usage';
 
 /** Se alcanzó el límite diario de este tipo de análisis. */
@@ -29,12 +28,13 @@ export type AiServiceDeps = {
  * devolver algo, se libera (no se le cobra al usuario un error nuestro).
  */
 export function createAiService({ provider, usage, limits, debug }: AiServiceDeps) {
-  async function run(
+  async function run<T>(
     userId: string,
     day: string,
     kind: UsageKind,
     call: () => ReturnType<AiProvider['analyze']>,
-  ): Promise<PhotoItem[]> {
+    parse: (raw: unknown) => T,
+  ): Promise<T> {
     if (!(await usage.reserve(userId, day, kind, limits[kind]))) {
       throw new QuotaExceededError(kind, limits[kind]);
     }
@@ -51,7 +51,7 @@ export function createAiService({ provider, usage, limits, debug }: AiServiceDep
     // Los tokens se registran aunque la respuesta no sirva: se gastaron igual.
     await usage.recordTokens(userId, day, kind, used);
     try {
-      return parseModelItems(analysis.raw);
+      return parse(analysis.raw);
     } catch (error) {
       if (error instanceof AiError && analysis.diagnostics) {
         debug?.(`respuesta cruda del modelo: ${JSON.stringify(analysis.raw).slice(0, 800)}`);
@@ -65,16 +65,55 @@ export function createAiService({ provider, usage, limits, debug }: AiServiceDep
 
   return {
     analyzePhoto: (userId: string, day: string, jpeg: Uint8Array, signal?: AbortSignal) =>
-      run(userId, day, 'photo', () =>
-        provider.analyze(
-          { kind: 'photo', mediaType: 'image/jpeg', base64: Buffer.from(jpeg).toString('base64') },
-          PHOTO_SYSTEM,
-          signal,
-        ),
+      run(
+        userId,
+        day,
+        'photo',
+        () =>
+          provider.analyze(
+            {
+              kind: 'photo',
+              mediaType: 'image/jpeg',
+              base64: Buffer.from(jpeg).toString('base64'),
+            },
+            PHOTO_SYSTEM,
+            signal,
+          ),
+        parseModelItems,
       ),
 
     analyzeText: (userId: string, day: string, text: string, signal?: AbortSignal) =>
-      run(userId, day, 'text', () => provider.analyze({ kind: 'text', text }, TEXT_SYSTEM, signal)),
+      run(
+        userId,
+        day,
+        'text',
+        () => provider.analyze({ kind: 'text', text }, TEXT_SYSTEM, signal),
+        parseModelItems,
+      ),
+
+    /**
+     * Pedido de texto con su propia herramienta y validación (lo usa el asistente de plan). Cuenta
+     * contra el mismo cupo diario de texto: no hay un presupuesto aparte que se pueda disparar.
+     */
+    structured: <T>(
+      userId: string,
+      day: string,
+      request: { text: string; system: string; tool: AiTool; parse: (raw: unknown) => T },
+      signal?: AbortSignal,
+    ) =>
+      run(
+        userId,
+        day,
+        'text',
+        () =>
+          provider.analyze(
+            { kind: 'text', text: request.text },
+            request.system,
+            signal,
+            request.tool,
+          ),
+        request.parse,
+      ),
   };
 }
 

@@ -775,6 +775,38 @@ export const es = {
       },
     },
   },
+  assistant: {
+    title: '¿Qué como?',
+    entry: {
+      title: '¿Qué como?',
+      help: 'Opciones para llegar a tu meta de hoy.',
+    },
+    meal: 'Comida',
+    modes: { meal: 'Una comida', day: 'Armar el día' },
+    remaining: 'Te faltan hoy',
+    remainingValue: '{kcal} kcal · P {protein} g · C {carbs} g · G {fat} g',
+    suggest: 'Sugerir opciones',
+    again: 'Probar otras',
+    working: 'Armando opciones…',
+    reached: 'Ya llegaste a tu meta de hoy. Si igual vas a comer algo, cargalo desde Agregar.',
+    addTo: 'Agregar a {meal}',
+    added: 'Agregado a {meal}',
+    addedDone: 'Agregada',
+    viewDiary: 'Ver diario',
+    itemLine: '{grams} g · {kcal} kcal',
+    totals: '{kcal} kcal · P {protein} g · C {carbs} g · G {fat} g',
+    optionLabel: 'Opción {n}',
+    dayTotal: 'Total del plan: {kcal} kcal de las {remaining} que te faltan',
+    disclaimer:
+      'Son sugerencias, no indicaciones médicas. Las calorías y los macros salen de la base de alimentos; los gramos son orientativos. Cada pedido cuenta como un análisis de texto del día.',
+    errors: {
+      no_options:
+        'No pudimos armar opciones con alimentos de tu base. Probá de nuevo en un momento.',
+      sessionExpired: 'Tu sesión venció. Volvé a ingresar.',
+      foodNotFound: 'Alguno de los alimentos ya no está disponible. Pedí otras opciones.',
+      generic: 'No pudimos completar la acción. Probá de nuevo.',
+    },
+  },
   water: {
     title: 'Agua',
     progress: '{total} de {goal} ml',

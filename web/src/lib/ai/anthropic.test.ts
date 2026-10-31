@@ -242,4 +242,28 @@ describe('createAnthropicProvider', () => {
       'key-123',
     );
   });
+
+  it('con otra herramienta la fuerza y lee su llamada (no la de comidas)', async () => {
+    const tool = { name: 'suggest_meals', description: 'd', schema: { type: 'object' } };
+    const { provider, fetchMock } = make(
+      () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              { type: 'tool_use', name: TOOL_NAME, input: { equivocada: true } },
+              { type: 'tool_use', name: 'suggest_meals', input: { options: [] } },
+            ],
+            usage: { input_tokens: 10, output_tokens: 2 },
+          }),
+          { status: 200 },
+        ),
+    );
+    const analysis = await provider.analyze(TEXT, 's', undefined, tool);
+    const body = JSON.parse(fetchMock.mock.calls[0]![1].body);
+    expect(body.tool_choice).toEqual({ type: 'tool', name: 'suggest_meals' });
+    expect(body.tools).toEqual([
+      { name: 'suggest_meals', description: 'd', input_schema: { type: 'object' } },
+    ]);
+    expect(analysis.raw).toEqual({ options: [] });
+  });
 });

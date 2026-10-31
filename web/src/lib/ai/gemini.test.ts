@@ -239,4 +239,27 @@ describe('createGeminiProvider', () => {
       'key-123',
     );
   });
+
+  it('con otra herramienta la fuerza y lee su llamada (no la de comidas)', async () => {
+    const tool = {
+      name: 'suggest_meals',
+      description: 'd',
+      schema: { type: 'object', additionalProperties: false, properties: {} },
+    };
+    const { provider, fetchMock } = make(() =>
+      reply([
+        { functionCall: { name: TOOL_NAME, args: { equivocada: true } } },
+        { functionCall: { name: 'suggest_meals', args: { options: [] } } },
+      ]),
+    );
+    const analysis = await provider.analyze(TEXT, 's', undefined, tool);
+    const body = JSON.parse(fetchMock.mock.calls[0]![1].body);
+    expect(body.toolConfig.functionCallingConfig.allowedFunctionNames).toEqual(['suggest_meals']);
+    expect(body.tools[0].functionDeclarations[0]).toEqual({
+      name: 'suggest_meals',
+      description: 'd',
+      parameters: { type: 'object', properties: {} },
+    });
+    expect(analysis.raw).toEqual({ options: [] });
+  });
 });

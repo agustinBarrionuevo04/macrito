@@ -127,3 +127,56 @@ describe('createAiService: diagnóstico de respuestas inválidas', () => {
     expect(debug).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('structured', () => {
+  const tool = { name: 'otra', description: 'otra herramienta', schema: { type: 'object' } };
+  const request = (parse = (raw: unknown) => raw) => ({
+    text: 'pedido',
+    system: 'sistema',
+    tool,
+    parse,
+  });
+
+  it('usa el cupo de texto, pasa la herramienta y valida con su propio parser', async () => {
+    const analyze = vi.fn().mockResolvedValue(reply({ listo: true }));
+    const { service, usage } = make({ analyze });
+    const result = await service.structured('u1', '2026-03-15', request());
+    expect(result).toEqual({ listo: true });
+    expect(usage.reserve).toHaveBeenCalledWith('u1', '2026-03-15', 'text', 9);
+    expect(usage.recordTokens).toHaveBeenCalledWith('u1', '2026-03-15', 'text', {
+      inputTokens: 1000,
+      outputTokens: 50,
+    });
+    expect(analyze).toHaveBeenCalledWith(
+      { kind: 'text', text: 'pedido' },
+      'sistema',
+      undefined,
+      tool,
+    );
+  });
+
+  it('sin cupo no llama al proveedor', async () => {
+    const analyze = vi.fn();
+    const { service } = make({ analyze }, tracker(false));
+    await expect(service.structured('u1', 'd', request())).rejects.toBeInstanceOf(
+      QuotaExceededError,
+    );
+    expect(analyze).not.toHaveBeenCalled();
+  });
+
+  it('si el proveedor falla libera el cupo; si la respuesta no sirve, los tokens quedan registrados', async () => {
+    const failing = make({ analyze: vi.fn().mockRejectedValue(new AiError('unavailable', 'x')) });
+    await expect(failing.service.structured('u1', 'd', request())).rejects.toBeInstanceOf(AiError);
+    expect(failing.usage.release).toHaveBeenCalledWith('u1', 'd', 'text');
+
+    const invalid = make({ analyze: vi.fn().mockResolvedValue(reply({})) });
+    const parse = () => {
+      throw new AiError('bad_response', 'no sirve');
+    };
+    await expect(invalid.service.structured('u1', 'd', request(parse))).rejects.toMatchObject({
+      code: 'bad_response',
+    });
+    expect(invalid.usage.recordTokens).toHaveBeenCalled();
+    expect(invalid.usage.release).not.toHaveBeenCalled();
+  });
+});

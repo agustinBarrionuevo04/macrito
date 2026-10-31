@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import { AssistantEntry } from '@/features/assistant/components/assistant-entry';
 import { DayPager } from '@/features/diary/components/day-pager';
 import { DiarySkeleton } from '@/features/diary/components/diary-skeleton';
 import { DiaryView } from '@/features/diary/components/diary-view';
@@ -60,6 +61,7 @@ async function DayContent({
       targets={targets}
       extras={
         <>
+          {targets ? <AssistantEntry day={day} today={today} /> : null}
           {water ? <WaterCard day={day} {...water} /> : null}
           {micro ? <MicroPanel totals={micro} targetKcal={targets?.kcal ?? null} /> : null}
         </>
